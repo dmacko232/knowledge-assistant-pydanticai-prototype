@@ -50,9 +50,9 @@ Processing of structured and semi-structured data:
 - include citations on output
 
 Additional features later on
-- store chat history in DB
-- summarize long conversations
-- extract user preferences and store them
+- store chat history in transactional DB
+- summarize long conversations and store in transactional DB
+- extract user preferences and store them in transactional DB. Keep in mind sometimes it might be better for user to explicitly specify preferences than to extract them on our own
 - use observability tool
 
 ### Frontend
