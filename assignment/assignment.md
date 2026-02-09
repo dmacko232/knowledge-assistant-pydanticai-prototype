@@ -1,16 +1,3 @@
-# Northwind Commerce — KB Dataset (Fictional)
-
-# TODO rewrite
-
-This repository contains a small, sanitized internal knowledge base (KB) dataset for a fictional company, **Northwind Commerce**, intended to evaluate candidates building an “Internal Knowledge Assistant” (grounded Q&A, optional retrieval/memory/tooling). The KB includes policies, operational runbooks, and product/data domain documentation with realistic structure and cross-references. All content is fictional and safe to use for evaluation.
-
-## What’s inside
-- `kb/` — markdown documents (policies, runbooks, product/data docs)
-- `data/` — optional structured data for lookups (e.g., KPI catalog, directory)
-- `tests.md` — acceptance tests (required + optional)
-- `assignment.md` — candidate-facing instructions
-
-
 # Assignment: Internal Knowledge Assistant
 
 ## Goal
