@@ -42,7 +42,7 @@ Processing of structured and semi-structured data:
 - we would parse the kpi_catalog.csv and directory and store them as two separate tables in SQL DB
 
 ### Backend
-- agent written in PydanticAI framework
+- agent written in PydanticAI framework, FastAPI bakcned
 - two tools, one to look up data in SQL DB and second one to search KB
 - retrieval tool is standard pipeline of embedding -> search -> reranker
 - prompt forces to LLM to say it doesnt know
@@ -58,3 +58,4 @@ Additional features later on
 ### Frontend
 - simple prototype in chainlit (Python lib), later on in Typescript+React
 - simple chat UI
+- later on ability to give feedback
