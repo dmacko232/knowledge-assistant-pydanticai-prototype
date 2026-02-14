@@ -1,0 +1,9 @@
+[project]
+name = "data-analysis"
+version = "0.1.0"
+description = "Data analysis for Northwind Commerce knowledge base"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+analyze = "analyze:main"
