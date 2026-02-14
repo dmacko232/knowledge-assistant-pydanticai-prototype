@@ -1,0 +1,50 @@
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Frontend (npm)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "frontend"
+    open-pull-requests-limit: 10
+
+  # Data Analysis (Python/uv)
+  - package-ecosystem: "pip"
+    directory: "/data_analysis"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "data-analysis"
+    open-pull-requests-limit: 5
+
+  # Backend (Python/uv)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "backend"
+    open-pull-requests-limit: 5
+
+  # Data Pipeline (Python/uv)
+  - package-ecosystem: "pip"
+    directory: "/data_pipeline"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "data-pipeline"
+    open-pull-requests-limit: 5

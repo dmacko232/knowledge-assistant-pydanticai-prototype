@@ -4,68 +4,70 @@ Data Analysis Script for Northwind Commerce Knowledge Base
 Analyzes data/raw and outputs reports to data_analysis/outputs
 """
 
-import json
 import csv
+import json
 import os
-from pathlib import Path
-from datetime import datetime as dt, timedelta
-from collections import defaultdict, Counter
 import re
+from collections import Counter, defaultdict
+from datetime import datetime as dt
+from pathlib import Path
+
 
 def load_directory_data():
     """Load employee directory from JSON"""
-    with open('../data/raw/structured/directory.json', 'r') as f:
+    with open("../data/raw/structured/directory.json") as f:
         return json.load(f)
+
 
 def load_kpi_catalog():
     """Load KPI catalog from CSV"""
     kpis = []
-    with open('../data/raw/structured/kpi_catalog.csv', 'r') as f:
+    with open("../data/raw/structured/kpi_catalog.csv") as f:
         reader = csv.DictReader(f)
         for row in reader:
             kpis.append(row)
     return kpis
 
+
 def analyze_documents():
     """Analyze all markdown documents"""
-    docs_path = Path('../data/raw/documents')
-    docs_analysis = {
-        'domain': [],
-        'policies': [],
-        'runbooks': []
-    }
+    docs_path = Path("../data/raw/documents")
+    docs_analysis = {"domain": [], "policies": [], "runbooks": []}
 
     for category in docs_analysis.keys():
         category_path = docs_path / category
         if category_path.exists():
-            for doc_file in category_path.glob('*.md'):
-                with open(doc_file, 'r') as f:
+            for doc_file in category_path.glob("*.md"):
+                with open(doc_file) as f:
                     content = f.read()
 
                 # Extract metadata
-                lines = content.split('\n')
-                title = lines[0].replace('#', '').strip() if lines else doc_file.stem
+                lines = content.split("\n")
+                title = lines[0].replace("#", "").strip() if lines else doc_file.stem
 
                 # Find last updated date
                 last_updated = None
                 for line in lines[:10]:  # Check first 10 lines
-                    if 'last updated' in line.lower():
-                        date_match = re.search(r'\d{4}-\d{2}-\d{2}', line)
+                    if "last updated" in line.lower():
+                        date_match = re.search(r"\d{4}-\d{2}-\d{2}", line)
                         if date_match:
                             last_updated = date_match.group(0)
                         break
 
-                docs_analysis[category].append({
-                    'filename': doc_file.name,
-                    'title': title,
-                    'last_updated': last_updated,
-                    'word_count': len(content.split()),
-                    'line_count': len(lines),
-                    'has_links': bool(re.search(r'\[.*?\]\(.*?\)', content)),
-                    'has_code_blocks': '```' in content
-                })
+                docs_analysis[category].append(
+                    {
+                        "filename": doc_file.name,
+                        "title": title,
+                        "last_updated": last_updated,
+                        "word_count": len(content.split()),
+                        "line_count": len(lines),
+                        "has_links": bool(re.search(r"\[.*?\]\(.*?\)", content)),
+                        "has_code_blocks": "```" in content,
+                    }
+                )
 
     return docs_analysis
+
 
 def analyze_teams_and_ownership(directory_data, kpi_data):
     """Analyze team composition and ownership"""
@@ -74,52 +76,56 @@ def analyze_teams_and_ownership(directory_data, kpi_data):
     timezones = Counter()
 
     for person in directory_data:
-        teams[person['team']].append(person)
-        roles[person['role']] += 1
-        timezones[person['timezone']] += 1
+        teams[person["team"]].append(person)
+        roles[person["role"]] += 1
+        timezones[person["timezone"]] += 1
 
     # KPI ownership
     kpi_owners = Counter()
     for kpi in kpi_data:
-        kpi_owners[kpi['owner_team']] += 1
+        kpi_owners[kpi["owner_team"]] += 1
 
     return {
-        'teams': dict(teams),
-        'team_sizes': {team: len(members) for team, members in teams.items()},
-        'roles': dict(roles),
-        'timezones': dict(timezones),
-        'kpi_ownership': dict(kpi_owners)
+        "teams": dict(teams),
+        "team_sizes": {team: len(members) for team, members in teams.items()},
+        "roles": dict(roles),
+        "timezones": dict(timezones),
+        "kpi_ownership": dict(kpi_owners),
     }
+
 
 def analyze_kpis(kpi_data):
     """Detailed KPI analysis"""
     analysis = {
-        'total_kpis': len(kpi_data),
-        'by_owner': defaultdict(list),
-        'by_source': defaultdict(list),
-        'update_recency': [],
-        'data_sources': set()
+        "total_kpis": len(kpi_data),
+        "by_owner": defaultdict(list),
+        "by_source": defaultdict(list),
+        "update_recency": [],
+        "data_sources": set(),
     }
 
     for kpi in kpi_data:
-        analysis['by_owner'][kpi['owner_team']].append(kpi['kpi_name'])
-        analysis['by_source'][kpi['primary_source']].append(kpi['kpi_name'])
-        analysis['data_sources'].add(kpi['primary_source'])
+        analysis["by_owner"][kpi["owner_team"]].append(kpi["kpi_name"])
+        analysis["by_source"][kpi["primary_source"]].append(kpi["kpi_name"])
+        analysis["data_sources"].add(kpi["primary_source"])
 
-        if kpi['last_updated']:
-            analysis['update_recency'].append({
-                'kpi': kpi['kpi_name'],
-                'last_updated': kpi['last_updated'],
-                'owner': kpi['owner_team']
-            })
+        if kpi["last_updated"]:
+            analysis["update_recency"].append(
+                {
+                    "kpi": kpi["kpi_name"],
+                    "last_updated": kpi["last_updated"],
+                    "owner": kpi["owner_team"],
+                }
+            )
 
     # Convert defaultdicts to regular dicts
-    analysis['by_owner'] = dict(analysis['by_owner'])
-    analysis['by_source'] = dict(analysis['by_source'])
-    analysis['data_sources'] = sorted(list(analysis['data_sources']))
-    analysis['update_recency'].sort(key=lambda x: x['last_updated'], reverse=True)
+    analysis["by_owner"] = dict(analysis["by_owner"])
+    analysis["by_source"] = dict(analysis["by_source"])
+    analysis["data_sources"] = sorted(analysis["data_sources"])
+    analysis["update_recency"].sort(key=lambda x: x["last_updated"], reverse=True)
 
     return analysis
+
 
 def generate_overview_report(directory_data, kpi_data, docs_analysis):
     """Generate overview report"""
@@ -139,12 +145,15 @@ def generate_overview_report(directory_data, kpi_data, docs_analysis):
     for category, docs in docs_analysis.items():
         report.append(f"### {category.title()}")
         for doc in docs:
-            report.append(f"- [{doc['title']}](../../data/raw/documents/{category}/{doc['filename']})")
+            report.append(
+                f"- [{doc['title']}](../../data/raw/documents/{category}/{doc['filename']})"
+            )
             report.append(f"  - Last updated: {doc['last_updated'] or 'Unknown'}")
             report.append(f"  - Size: {doc['word_count']} words, {doc['line_count']} lines")
         report.append("")
 
-    return '\n'.join(report)
+    return "\n".join(report)
+
 
 def generate_team_analysis(team_data):
     """Generate team and ownership analysis"""
@@ -155,33 +164,34 @@ def generate_team_analysis(team_data):
     report.append("## Team Composition\n")
     report.append("| Team | Size | Members |")
     report.append("|------|------|---------|")
-    for team, members in sorted(team_data['teams'].items(), key=lambda x: len(x[1]), reverse=True):
-        member_names = ', '.join([m['name'] for m in members])
+    for team, members in sorted(team_data["teams"].items(), key=lambda x: len(x[1]), reverse=True):
+        member_names = ", ".join([m["name"] for m in members])
         report.append(f"| {team} | {len(members)} | {member_names} |")
     report.append("")
 
     report.append("## KPI Ownership by Team\n")
     report.append("| Team | KPI Count |")
     report.append("|------|-----------|")
-    for team, count in sorted(team_data['kpi_ownership'].items(), key=lambda x: x[1], reverse=True):
+    for team, count in sorted(team_data["kpi_ownership"].items(), key=lambda x: x[1], reverse=True):
         report.append(f"| {team} | {count} |")
     report.append("")
 
     report.append("## Geographic Distribution\n")
     report.append("| Timezone | Count |")
     report.append("|----------|-------|")
-    for tz, count in sorted(team_data['timezones'].items(), key=lambda x: x[1], reverse=True):
+    for tz, count in sorted(team_data["timezones"].items(), key=lambda x: x[1], reverse=True):
         report.append(f"| {tz} | {count} |")
     report.append("")
 
     report.append("## Role Distribution\n")
     report.append("| Role | Count |")
     report.append("|------|-------|")
-    for role, count in sorted(team_data['roles'].items(), key=lambda x: x[1], reverse=True):
+    for role, count in sorted(team_data["roles"].items(), key=lambda x: x[1], reverse=True):
         report.append(f"| {role} | {count} |")
     report.append("")
 
-    return '\n'.join(report)
+    return "\n".join(report)
+
 
 def generate_kpi_analysis(kpi_analysis):
     """Generate KPI analysis report"""
@@ -189,12 +199,14 @@ def generate_kpi_analysis(kpi_analysis):
     report.append("# KPI Analysis Report\n")
     report.append(f"Generated: {dt.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-    report.append(f"## Overview\n")
+    report.append("## Overview\n")
     report.append(f"- **Total KPIs:** {kpi_analysis['total_kpis']}")
     report.append(f"- **Unique Data Sources:** {len(kpi_analysis['data_sources'])}\n")
 
     report.append("## KPIs by Owner Team\n")
-    for owner, kpis in sorted(kpi_analysis['by_owner'].items(), key=lambda x: len(x[1]), reverse=True):
+    for owner, kpis in sorted(
+        kpi_analysis["by_owner"].items(), key=lambda x: len(x[1]), reverse=True
+    ):
         report.append(f"### {owner} ({len(kpis)} KPIs)")
         for kpi in kpis:
             report.append(f"- {kpi}")
@@ -203,19 +215,22 @@ def generate_kpi_analysis(kpi_analysis):
     report.append("## Data Sources\n")
     report.append("| Data Source | KPI Count | KPIs |")
     report.append("|-------------|-----------|------|")
-    for source, kpis in sorted(kpi_analysis['by_source'].items(), key=lambda x: len(x[1]), reverse=True):
-        kpi_list = ', '.join(kpis)
+    for source, kpis in sorted(
+        kpi_analysis["by_source"].items(), key=lambda x: len(x[1]), reverse=True
+    ):
+        kpi_list = ", ".join(kpis)
         report.append(f"| {source} | {len(kpis)} | {kpi_list} |")
     report.append("")
 
     report.append("## Update Recency\n")
     report.append("| KPI | Last Updated | Owner |")
     report.append("|-----|--------------|-------|")
-    for item in kpi_analysis['update_recency']:
+    for item in kpi_analysis["update_recency"]:
         report.append(f"| {item['kpi']} | {item['last_updated']} | {item['owner']} |")
     report.append("")
 
-    return '\n'.join(report)
+    return "\n".join(report)
+
 
 def generate_document_metadata_analysis(docs_analysis):
     """Generate document metadata analysis"""
@@ -226,7 +241,7 @@ def generate_document_metadata_analysis(docs_analysis):
     all_docs = []
     for category, docs in docs_analysis.items():
         for doc in docs:
-            doc['category'] = category
+            doc["category"] = category
             all_docs.append(doc)
 
     report.append("## All Documents by Update Date\n")
@@ -234,24 +249,27 @@ def generate_document_metadata_analysis(docs_analysis):
     report.append("|----------|----------|--------------|------|")
 
     # Sort by last_updated (most recent first)
-    sorted_docs = sorted(all_docs, key=lambda x: x['last_updated'] or '1900-01-01', reverse=True)
+    sorted_docs = sorted(all_docs, key=lambda x: x["last_updated"] or "1900-01-01", reverse=True)
     for doc in sorted_docs:
-        report.append(f"| {doc['title']} | {doc['category']} | {doc['last_updated'] or 'Unknown'} | {doc['word_count']} words |")
+        report.append(
+            f"| {doc['title']} | {doc['category']} | {doc['last_updated'] or 'Unknown'} | {doc['word_count']} words |"
+        )
     report.append("")
 
     report.append("## Document Statistics\n")
-    total_words = sum(doc['word_count'] for doc in all_docs)
-    total_lines = sum(doc['line_count'] for doc in all_docs)
-    docs_with_links = sum(1 for doc in all_docs if doc['has_links'])
-    docs_with_code = sum(1 for doc in all_docs if doc['has_code_blocks'])
+    total_words = sum(doc["word_count"] for doc in all_docs)
+    total_lines = sum(doc["line_count"] for doc in all_docs)
+    docs_with_links = sum(1 for doc in all_docs if doc["has_links"])
+    docs_with_code = sum(1 for doc in all_docs if doc["has_code_blocks"])
 
     report.append(f"- **Total Word Count:** {total_words:,}")
     report.append(f"- **Total Line Count:** {total_lines:,}")
     report.append(f"- **Documents with Links:** {docs_with_links}/{len(all_docs)}")
     report.append(f"- **Documents with Code Blocks:** {docs_with_code}/{len(all_docs)}")
-    report.append(f"- **Average Document Size:** {total_words//len(all_docs)} words\n")
+    report.append(f"- **Average Document Size:** {total_words // len(all_docs)} words\n")
 
-    return '\n'.join(report)
+    return "\n".join(report)
+
 
 def generate_policy_compliance_report(docs_analysis, kpi_data):
     """Generate policy and compliance observations"""
@@ -260,7 +278,7 @@ def generate_policy_compliance_report(docs_analysis, kpi_data):
     report.append(f"Generated: {dt.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
     report.append("## Policy Documents\n")
-    for doc in docs_analysis['policies']:
+    for doc in docs_analysis["policies"]:
         report.append(f"### {doc['title']}")
         report.append(f"- **File:** {doc['filename']}")
         report.append(f"- **Last Updated:** {doc['last_updated'] or 'Unknown'}")
@@ -274,14 +292,14 @@ def generate_policy_compliance_report(docs_analysis, kpi_data):
     recent_kpis = []
 
     for kpi in kpi_data:
-        if kpi['last_updated']:
-            update_date = dt.strptime(kpi['last_updated'], '%Y-%m-%d')
+        if kpi["last_updated"]:
+            update_date = dt.strptime(kpi["last_updated"], "%Y-%m-%d")
             days_old = (current_date - update_date).days
 
             if days_old > 60:
-                old_kpis.append((kpi['kpi_name'], kpi['last_updated'], days_old))
+                old_kpis.append((kpi["kpi_name"], kpi["last_updated"], days_old))
             elif days_old < 30:
-                recent_kpis.append((kpi['kpi_name'], kpi['last_updated'], days_old))
+                recent_kpis.append((kpi["kpi_name"], kpi["last_updated"], days_old))
 
     if old_kpis:
         report.append(f"### KPIs Not Updated in 60+ Days ({len(old_kpis)})")
@@ -297,18 +315,18 @@ def generate_policy_compliance_report(docs_analysis, kpi_data):
 
     # Check document dates
     all_docs = []
-    for category, docs in docs_analysis.items():
+    for _category, docs in docs_analysis.items():
         all_docs.extend(docs)
 
     old_docs = []
     for doc in all_docs:
-        if doc['last_updated']:
+        if doc["last_updated"]:
             try:
-                update_date = dt.strptime(doc['last_updated'], '%Y-%m-%d')
+                update_date = dt.strptime(doc["last_updated"], "%Y-%m-%d")
                 days_old = (current_date - update_date).days
                 if days_old > 60:
-                    old_docs.append((doc['title'], doc['last_updated'], days_old))
-            except:
+                    old_docs.append((doc["title"], doc["last_updated"], days_old))
+            except (ValueError, TypeError):
                 pass
 
     if old_docs:
@@ -323,7 +341,8 @@ def generate_policy_compliance_report(docs_analysis, kpi_data):
     report.append("3. Consider adding version control metadata to all documents")
     report.append("4. Establish a regular review cycle for all knowledge base content\n")
 
-    return '\n'.join(report)
+    return "\n".join(report)
+
 
 def generate_data_quality_report(directory_data, kpi_data, docs_analysis):
     """Generate data quality observations"""
@@ -335,7 +354,7 @@ def generate_data_quality_report(directory_data, kpi_data, docs_analysis):
 
     # Check directory data
     report.append("### Employee Directory")
-    complete_fields = ['name', 'email', 'team', 'role', 'timezone']
+    complete_fields = ["name", "email", "team", "role", "timezone"]
     missing_data = defaultdict(int)
     for person in directory_data:
         for field in complete_fields:
@@ -352,7 +371,7 @@ def generate_data_quality_report(directory_data, kpi_data, docs_analysis):
 
     # Check KPI data
     report.append("### KPI Catalog")
-    kpi_fields = ['kpi_name', 'definition', 'owner_team', 'primary_source', 'last_updated']
+    kpi_fields = ["kpi_name", "definition", "owner_team", "primary_source", "last_updated"]
     kpi_missing = defaultdict(int)
     for kpi in kpi_data:
         for field in kpi_fields:
@@ -370,10 +389,10 @@ def generate_data_quality_report(directory_data, kpi_data, docs_analysis):
     # Check documents
     report.append("### Documents")
     all_docs = []
-    for category, docs in docs_analysis.items():
+    for _category, docs in docs_analysis.items():
         all_docs.extend(docs)
 
-    docs_missing_date = sum(1 for doc in all_docs if not doc['last_updated'])
+    docs_missing_date = sum(1 for doc in all_docs if not doc["last_updated"])
     report.append(f"- {docs_missing_date}/{len(all_docs)} documents missing 'Last updated' date")
     report.append("")
 
@@ -381,12 +400,12 @@ def generate_data_quality_report(directory_data, kpi_data, docs_analysis):
 
     # Check team naming consistency
     report.append("### Team Names")
-    teams_in_directory = set(p['team'] for p in directory_data)
-    teams_in_kpis = set(k['owner_team'] for k in kpi_data)
+    teams_in_directory = {p["team"] for p in directory_data}
+    teams_in_kpis = {k["owner_team"] for k in kpi_data}
     teams_only_in_kpis = teams_in_kpis - teams_in_directory
 
     if teams_only_in_kpis:
-        report.append(f"**Warning:** Teams in KPI catalog but not in directory:")
+        report.append("**Warning:** Teams in KPI catalog but not in directory:")
         for team in teams_only_in_kpis:
             report.append(f"- {team}")
     else:
@@ -397,9 +416,12 @@ def generate_data_quality_report(directory_data, kpi_data, docs_analysis):
     report.append(f"- **Directory Records:** {len(directory_data)} complete")
     report.append(f"- **KPI Records:** {len(kpi_data)} total")
     report.append(f"- **Documents:** {len(all_docs)} total")
-    report.append(f"- **Overall Data Quality:** {'Good' if not (missing_data or kpi_missing or teams_only_in_kpis) else 'Needs Review'}\n")
+    report.append(
+        f"- **Overall Data Quality:** {'Good' if not (missing_data or kpi_missing or teams_only_in_kpis) else 'Needs Review'}\n"
+    )
 
-    return '\n'.join(report)
+    return "\n".join(report)
+
 
 def main():
     """Main analysis function"""
@@ -417,25 +439,26 @@ def main():
     print("Generating reports...")
 
     # Create output directory
-    os.makedirs('outputs', exist_ok=True)
+    os.makedirs("outputs", exist_ok=True)
 
     # Generate all reports
     reports = {
-        'overview.md': generate_overview_report(directory_data, kpi_data, docs_analysis),
-        'team_analysis.md': generate_team_analysis(team_data),
-        'kpi_analysis.md': generate_kpi_analysis(kpi_analysis),
-        'document_metadata.md': generate_document_metadata_analysis(docs_analysis),
-        'policy_compliance.md': generate_policy_compliance_report(docs_analysis, kpi_data),
-        'data_quality.md': generate_data_quality_report(directory_data, kpi_data, docs_analysis)
+        "overview.md": generate_overview_report(directory_data, kpi_data, docs_analysis),
+        "team_analysis.md": generate_team_analysis(team_data),
+        "kpi_analysis.md": generate_kpi_analysis(kpi_analysis),
+        "document_metadata.md": generate_document_metadata_analysis(docs_analysis),
+        "policy_compliance.md": generate_policy_compliance_report(docs_analysis, kpi_data),
+        "data_quality.md": generate_data_quality_report(directory_data, kpi_data, docs_analysis),
     }
 
     for filename, content in reports.items():
-        output_path = f'outputs/{filename}'
-        with open(output_path, 'w') as f:
+        output_path = f"outputs/{filename}"
+        with open(output_path, "w") as f:
             f.write(content)
         print(f"  ✓ Generated {output_path}")
 
     print(f"\n✓ Analysis complete! {len(reports)} reports saved to data_analysis/outputs/")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

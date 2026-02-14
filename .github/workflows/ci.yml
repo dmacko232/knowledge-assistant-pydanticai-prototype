@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, feat/*]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Summary job that requires all component jobs to pass
+  ci-status:
+    name: CI Status Check
+    runs-on: ubuntu-latest
+    needs: [data-analysis, backend, data-pipeline, frontend]
+    if: always()
+
+    steps:
+      - name: Check all jobs
+        run: |
+          if [ "${{ needs.data-analysis.result }}" != "success" ] || \
+             [ "${{ needs.backend.result }}" != "success" ] || \
+             [ "${{ needs.data-pipeline.result }}" != "success" ] || \
+             [ "${{ needs.frontend.result }}" != "success" ]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed!"
+
+  data-analysis:
+    name: Data Analysis
+    uses: ./.github/workflows/data-analysis.yml
+
+  backend:
+    name: Backend
+    uses: ./.github/workflows/backend.yml
+
+  data-pipeline:
+    name: Data Pipeline
+    uses: ./.github/workflows/data-pipeline.yml
+
+  frontend:
+    name: Frontend
+    uses: ./.github/workflows/frontend.yml
