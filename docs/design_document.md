@@ -10,7 +10,7 @@
 1. Anaylse raw data
 2. Write down design doc
 3. Data pipeline, setup of vector DB
-4. Backend 
+4. Backend
 5. Simple frontend
 6. Dockerization
 7. Presentation
@@ -21,7 +21,7 @@
 
 ### Data pipeline
 
-Generally, we use 
+Generally, we use
 - vector DB (in our case for simplicity vector plugin of sqlite) to store and chunks of the documents
 - relational DB for analytical workload (we would have many reads on BE and ocassional write during data pipeline)
 The pipeline would be composed of two steps:
