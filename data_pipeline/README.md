@@ -57,7 +57,7 @@ data_pipeline/
 
 ## Configuration
 
-- **Python Version**: >=3.11
+- **Python Version**: >=3.12
 - **Linter**: Ruff (configured in pyproject.toml)
 - **Type Checker**: mypy (strict mode enabled)
 - **Test Framework**: pytest with coverage
