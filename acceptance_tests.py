@@ -63,10 +63,22 @@ class TestResult:
         return self.error is None and all(c.passed for c in self.checks)
 
 
+ACCEPTANCE_TEST_USER_ID = "acceptance-test-user"
+
+
 def chat(base_url: str, messages: list[dict]) -> str:
-    """Send a chat request to the backend and return the answer."""
+    """Send a chat request to the backend and return the answer.
+
+    Accepts the old ``[{role, content}]`` format for backwards compatibility
+    with the test definitions.  Converts to the new stateful request format.
+    """
     url = f"{base_url}/chat"
-    payload = json.dumps({"messages": messages}).encode()
+    # Use the last user message as the prompt
+    user_message = messages[-1]["content"]
+    payload = json.dumps({
+        "user_id": ACCEPTANCE_TEST_USER_ID,
+        "message": user_message,
+    }).encode()
     req = urllib.request.Request(
         url, data=payload, headers={"Content-Type": "application/json"}
     )

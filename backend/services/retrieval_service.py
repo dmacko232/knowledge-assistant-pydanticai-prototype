@@ -1,16 +1,14 @@
 """Hybrid retrieval service combining vector search and BM25 with RRF reranking."""
 
 import json
-import logging
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import sqlite_vec
+from loguru import logger
 from openai import AzureOpenAI
 from sqlite_vec import serialize_float32
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

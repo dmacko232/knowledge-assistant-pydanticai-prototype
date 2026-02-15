@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     # Database
     # ------------------------------------------------------------------
     db_path: Path = _PROJECT_ROOT / "database" / "knowledge_assistant.sqlite"
+    chat_db_path: Path = _PROJECT_ROOT / "database" / "chat_history.sqlite"
 
     # ------------------------------------------------------------------
     # Computed defaults (embedding falls back to chat values)

@@ -12,6 +12,7 @@ dependencies = [
     "sqlite-vec>=0.1.0",
     "python-dotenv>=1.0.0",
     "pydantic-settings>=2.0.0",
+    "loguru>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +35,7 @@ ignore = ["E501"]
 
 [tool.setuptools]
 packages = ["services", "use_cases"]
-py-modules = ["main", "config", "agent", "models"]
+py-modules = ["main", "config", "agent", "models", "logging_config"]
 
 [tool.ty.environment]
 root = ["."]
