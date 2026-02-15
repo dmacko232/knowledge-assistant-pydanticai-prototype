@@ -1,7 +1,7 @@
 """Tests for the FastAPI presentation layer (routes, models, settings)."""
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -97,7 +97,9 @@ class TestChatEndpoint:
         mock_uc = AsyncMock()
         mock_uc.execute.return_value = ChatResult(
             answer="Grounded answer [1].\n\nSources:\n[1] doc.md",
-            tool_calls=[{"name": "search_knowledge_base", "args": {"query": "test"}, "result": "..."}],
+            tool_calls=[
+                {"name": "search_knowledge_base", "args": {"query": "test"}, "result": "..."}
+            ],
             sources=[{"document": "doc.md", "section": "Intro", "date": "2025-01-01"}],
             latency_ms=100,
         )

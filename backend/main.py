@@ -115,9 +115,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 
-def _load_history_as_messages(
-    history: ChatHistoryService, chat_id: str
-) -> list[ChatMessage]:
+def _load_history_as_messages(history: ChatHistoryService, chat_id: str) -> list[ChatMessage]:
     """Load all messages from the history DB and convert to ChatMessage list."""
     stored = history.get_chat_messages(chat_id)
     return [ChatMessage(role=m.role, content=m.content) for m in stored]
@@ -222,7 +220,7 @@ async def chat_stream(request: ChatRequest):
                 final_result = chunk
             else:
                 # Vercel protocol: text token
-                yield f'0:{json.dumps(chunk)}\n'
+                yield f"0:{json.dumps(chunk)}\n"
 
         if final_result:
             # Persist assistant message
@@ -242,10 +240,10 @@ async def chat_stream(request: ChatRequest):
                 "tool_calls": final_result.tool_calls,
                 "sources": final_result.sources,
             }
-            yield f'2:{json.dumps([annotation])}\n'
+            yield f"2:{json.dumps([annotation])}\n"
 
         # Vercel protocol: finish signal
-        yield f'd:{json.dumps({"finishReason": "stop"})}\n'
+        yield f"d:{json.dumps({'finishReason': 'stop'})}\n"
 
     return StreamingResponse(
         event_generator(),

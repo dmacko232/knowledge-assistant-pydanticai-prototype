@@ -113,8 +113,13 @@ class TestRerankerDisabled:
 
         candidates = [
             RetrievalResult(
-                chunk_id="c1", document_name="d.md", category="domain",
-                section_header=None, generation_chunk="text", last_updated=None, score=0.9,
+                chunk_id="c1",
+                document_name="d.md",
+                category="domain",
+                section_header=None,
+                generation_chunk="text",
+                last_updated=None,
+                score=0.9,
             ),
         ]
         result = svc._rerank("test query", candidates)

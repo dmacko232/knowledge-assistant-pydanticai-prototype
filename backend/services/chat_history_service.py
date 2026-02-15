@@ -10,7 +10,7 @@ import json
 import sqlite3
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from loguru import logger
@@ -102,7 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id);
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class ChatHistoryService:
@@ -148,7 +148,9 @@ class ChatHistoryService:
         row = self.conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         if not row:
             return None
-        return User(id=row["id"], name=row["name"], email=row["email"], created_at=row["created_at"])
+        return User(
+            id=row["id"], name=row["name"], email=row["email"], created_at=row["created_at"]
+        )
 
     def ensure_user(self, user_id: str) -> User:
         """Return existing user or auto-create a placeholder with the given ID."""
@@ -214,9 +216,7 @@ class ChatHistoryService:
 
     def _touch_chat(self, chat_id: str) -> None:
         assert self.conn
-        self.conn.execute(
-            "UPDATE chats SET updated_at = ? WHERE id = ?", (_utcnow(), chat_id)
-        )
+        self.conn.execute("UPDATE chats SET updated_at = ? WHERE id = ?", (_utcnow(), chat_id))
         self.conn.commit()
 
     # ------------------------------------------------------------------

@@ -90,15 +90,39 @@ def tmp_vector_db(tmp_path: Path) -> Path:
 
     # Seed some chunks
     chunks = [
-        ("chunk_1", "security_policy_v2.md", "policies", "Access Controls",
-         "retrieval text 1", "Security policy requires MFA for all production access.",
-         "2026-01-15", 20, json.dumps({"version": "v2"})),
-        ("chunk_2", "security_policy_v1.md", "policies", "Access Controls",
-         "retrieval text 2", "Production access requires VPN only.",
-         "2025-06-01", 15, json.dumps({"version": "v1"})),
-        ("chunk_3", "kpi_overview.md", "domain", "KPI Definitions",
-         "retrieval text 3", "MRR is calculated as total monthly subscriptions.",
-         "2025-09-01", 18, json.dumps({})),
+        (
+            "chunk_1",
+            "security_policy_v2.md",
+            "policies",
+            "Access Controls",
+            "retrieval text 1",
+            "Security policy requires MFA for all production access.",
+            "2026-01-15",
+            20,
+            json.dumps({"version": "v2"}),
+        ),
+        (
+            "chunk_2",
+            "security_policy_v1.md",
+            "policies",
+            "Access Controls",
+            "retrieval text 2",
+            "Production access requires VPN only.",
+            "2025-06-01",
+            15,
+            json.dumps({"version": "v1"}),
+        ),
+        (
+            "chunk_3",
+            "kpi_overview.md",
+            "domain",
+            "KPI Definitions",
+            "retrieval text 3",
+            "MRR is calculated as total monthly subscriptions.",
+            "2025-09-01",
+            18,
+            json.dumps({}),
+        ),
     ]
     cursor.executemany(
         "INSERT INTO document_chunks "

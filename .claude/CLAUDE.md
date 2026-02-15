@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-- `data_pipeline/` — Main Python package (run from this directory)
+- `data_pipeline/` — Batch CLI that ingests raw data into SQLite
   - `main.py` — CLI entry point (click-based)
   - `config.py` — Configuration and environment validation
   - `database/` — Storage layer (SQLite + sqlite-vec + FTS5)
@@ -10,25 +10,44 @@
   - `services/` — Embedding service (OpenAI)
   - `utils/` — Text and markdown utilities
   - `tests/` — Unit tests (pytest)
-- `docs/` — Design documents
+- `backend/` — FastAPI REST API (PydanticAI agent, hybrid retrieval, chat history)
+  - `main.py` — Presentation layer (routes)
+  - `config.py` — pydantic-settings configuration
+  - `agent.py` — PydanticAI agent factory + system prompt + tools
+  - `models.py` — Pydantic request/response schemas
+  - `use_cases/` — Business logic (ChatUseCase)
+  - `services/` — Retrieval, SQL, chat history services
+  - `tests/` — Unit tests (pytest)
+- `docs/` — Design document and architecture docs
+  - `architecture/backend.md` — Backend architecture documentation
+  - `architecture/data_pipeline.md` — Data pipeline architecture documentation
 
 ## Commands
 
-- `make check-all` — Run all quality checks and tests (format + lint + type-check + test)
-- `make test` — Run unit tests only
-- `make quality` — Run format + lint + type-check only
-- `make type-check` — Run ty type checker only
-- `make lint` — Run ruff linter with auto-fix
-- `make format` — Run ruff formatter
-
-All make targets run from the `data_pipeline/` directory automatically.
+- `make check-all` — Run all quality checks and tests for both projects
+- `make test-all` — Run all tests (data pipeline + backend)
+- `make test` — Run data pipeline tests only
+- `make test-backend` — Run backend tests only
+- `make quality-all` — Run quality checks for both projects
+- `make test-acceptance` — Run acceptance tests against live backend
 
 ## Code Style
 
-- **Imports**: Always use absolute imports (e.g., `from database.models import ...`), never relative imports (e.g., `from .models import ...`)
-- **Formatting**: Enforced by ruff — run `make format`
+- **Imports**: Always use absolute imports, never relative
+- **Formatting**: Enforced by ruff — run `make format` / `make format-backend`
 - **Linting**: Enforced by ruff with unsafe-fixes enabled
-- **Type checking**: Enforced by ty (red-knot) — all code must pass `make type-check`
-- **Models**: Use SQLModel for database models. Non-table models (like `SearchResult`) use `SQLModel` without `table=True`
-- **Database**: SQLite with sqlite-vec for vector search and FTS5 for full-text search. Embeddings must be serialized with `serialize_float32()` before passing to sqlite
-- **Tests**: pytest with fixtures in `conftest.py`. Tests use absolute imports matching the source code
+- **Data pipeline models**: SQLModel for database models
+- **Backend models**: Pydantic BaseModel for API schemas; pydantic-settings for config
+- **Database**: SQLite with sqlite-vec + FTS5 for knowledge DB; separate SQLite for chat history
+- **Logging**: loguru in backend (no stdlib logging)
+- **Tests**: pytest with fixtures in `conftest.py`. Tests use absolute imports
+
+## Documentation Maintenance
+
+After making functional changes to the codebase, update the relevant docs:
+
+- **`README.md`** — Setup instructions, project structure, available commands
+- **`docs/architecture/backend.md`** — Backend structure, API endpoints, services, config, retrieval, tests
+- **`docs/architecture/data_pipeline.md`** — Pipeline steps, DB schema, CLI commands, config
+
+Skip doc updates for trivial changes (typos, internal refactors, test-only changes).

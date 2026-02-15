@@ -10,7 +10,6 @@ from models import ChatMessage
 from use_cases.chat import CONTENT_FILTER_REFUSAL, ChatResult, ChatUseCase
 from use_cases.exceptions import EmptyConversationError
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -116,7 +115,8 @@ class TestExecution:
         assert call_args[0][0] == "New question"
 
     async def test_injects_agent_deps(
-        self, mock_agent: AsyncMock,
+        self,
+        mock_agent: AsyncMock,
     ):
         retrieval = MagicMock()
         sql = MagicMock()
@@ -249,12 +249,22 @@ class TestExtractToolCalls:
         from pydantic_ai.messages import TextPart, ToolCallPart, ToolReturnPart
 
         messages = [
-            ModelResponse(parts=[
-                ToolCallPart(tool_name="search_knowledge_base", args={"query": "security"}, tool_call_id="tc1"),
-            ]),
-            ModelRequest(parts=[
-                ToolReturnPart(tool_name="search_knowledge_base", content="Result text", tool_call_id="tc1"),
-            ]),
+            ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        tool_name="search_knowledge_base",
+                        args={"query": "security"},
+                        tool_call_id="tc1",
+                    ),
+                ]
+            ),
+            ModelRequest(
+                parts=[
+                    ToolReturnPart(
+                        tool_name="search_knowledge_base", content="Result text", tool_call_id="tc1"
+                    ),
+                ]
+            ),
             ModelResponse(parts=[TextPart(content="Answer")]),
         ]
         calls = ChatUseCase._extract_tool_calls(messages)
@@ -283,9 +293,13 @@ class TestExtractSources:
             "Content:\nSome text here\n"
         )
         messages = [
-            ModelRequest(parts=[
-                ToolReturnPart(tool_name="search_knowledge_base", content=content, tool_call_id="tc1"),
-            ]),
+            ModelRequest(
+                parts=[
+                    ToolReturnPart(
+                        tool_name="search_knowledge_base", content=content, tool_call_id="tc1"
+                    ),
+                ]
+            ),
         ]
         sources = ChatUseCase._extract_sources(messages)
         assert len(sources) == 1

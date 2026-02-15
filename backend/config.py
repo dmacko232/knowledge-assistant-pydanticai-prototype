@@ -95,9 +95,7 @@ class Settings(BaseSettings):
                 f"Database not found at {self.db_path}. Run the data pipeline first (make run-pipeline)."
             )
         if self.reranker_enabled and not self.reranker_api_key:
-            raise ValueError(
-                "RERANKER_ENABLED is true but RERANKER_API_KEY is not set."
-            )
+            raise ValueError("RERANKER_ENABLED is true but RERANKER_API_KEY is not set.")
 
 
 @lru_cache

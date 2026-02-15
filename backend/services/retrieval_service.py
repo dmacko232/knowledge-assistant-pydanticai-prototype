@@ -302,7 +302,9 @@ class RetrievalService:
         # 4) Fuse with RRF
         # When reranker is enabled, fetch more candidates so the reranker has a
         # richer pool to re-score.
-        rrf_limit = max(final_limit, self.reranker_top_n * 2) if self.reranker_enabled else final_limit
+        rrf_limit = (
+            max(final_limit, self.reranker_top_n * 2) if self.reranker_enabled else final_limit
+        )
         fused = self.reciprocal_rank_fusion(vector_results, bm25_results, k=rrf_k)
 
         # 5) Fetch chunk details for top candidates

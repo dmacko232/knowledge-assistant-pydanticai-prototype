@@ -11,7 +11,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from config import Settings, get_settings
 from services.retrieval_service import RetrievalService
-from services.sql_service import SQLService, TABLE_SCHEMAS
+from services.sql_service import TABLE_SCHEMAS, SQLService
 
 
 @dataclass
@@ -26,7 +26,8 @@ class AgentDeps:
 # System prompt
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT = (
+    """\
 You are the Northwind Commerce internal knowledge assistant. Your role is to \
 answer questions from employees using ONLY the internal knowledge base and \
 structured data (KPI catalog, employee directory).
@@ -69,9 +70,13 @@ depend on prior messages.
 directory using SQL.
 - You may call tools multiple times if the first search doesn't return \
 sufficient results. Try different queries or categories.
+- Use at most 5 tool calls per turn. If you haven't found what you need after \
+5 calls, answer with what you have or say you couldn't find it.
 - When using `lookup_structured_data`, you can query these tables:
 
-""" + TABLE_SCHEMAS + """
+"""
+    + TABLE_SCHEMAS
+    + """
 
 ### Response Format
 - Be concise but thorough.
@@ -79,6 +84,7 @@ sufficient results. Try different queries or categories.
 - Always include numbered citations [1], [2], etc. after statements.
 - End with a **Sources** section listing all references.
 """
+)
 
 
 # ---------------------------------------------------------------------------

@@ -141,9 +141,7 @@ class ChatUseCase:
     # Public API — streaming
     # ------------------------------------------------------------------
 
-    async def execute_stream(
-        self, messages: list[ChatMessage]
-    ) -> AsyncIterator[str | ChatResult]:
+    async def execute_stream(self, messages: list[ChatMessage]) -> AsyncIterator[str | ChatResult]:
         """Run a streaming chat turn.
 
         Yields:
@@ -272,9 +270,11 @@ class ChatUseCase:
                             elif line.startswith("Last Updated:"):
                                 date = line.split(":", 1)[1].strip()
                         if doc:
-                            sources.append({
-                                "document": doc,
-                                "section": section or "N/A",
-                                "date": date or "Unknown",
-                            })
+                            sources.append(
+                                {
+                                    "document": doc,
+                                    "section": section or "N/A",
+                                    "date": date or "Unknown",
+                                }
+                            )
         return sources

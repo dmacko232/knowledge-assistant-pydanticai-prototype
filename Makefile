@@ -1,6 +1,6 @@
 .PHONY: help install install-dev test test-cov lint format type-check quality check-all clean \
        run-pipeline reset-db stats run-backend test-backend install-backend install-backend-dev \
-       lint-backend format-backend test-acceptance \
+       lint-backend format-backend quality-backend quality-all test-acceptance \
        docker-build docker-pipeline docker-backend docker-up docker-down docker-logs
 
 help:
@@ -17,12 +17,16 @@ help:
 	@echo "  make lint          - Run ruff linter (auto-fixes issues)"
 	@echo "  make format        - Format code with ruff"
 	@echo "  make type-check    - Run ty type checker"
-	@echo "  make quality       - Run all quality checks (format + lint + type-check)"
-	@echo "  make check-all     - Run everything (quality + tests)"
+	@echo "  make quality       - Run data_pipeline quality checks (format + lint + type-check)"
 	@echo ""
 	@echo "Code Quality (backend):"
-	@echo "  make lint-backend   - Run ruff linter on backend"
-	@echo "  make format-backend - Format backend code with ruff"
+	@echo "  make lint-backend    - Run ruff linter on backend"
+	@echo "  make format-backend  - Format backend code with ruff"
+	@echo "  make quality-backend - Run backend quality checks (format + lint)"
+	@echo ""
+	@echo "Code Quality (all):"
+	@echo "  make quality-all   - Run quality checks for both projects"
+	@echo "  make check-all     - Run everything (quality + tests for both projects)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test            - Run data_pipeline unit tests"
@@ -71,10 +75,10 @@ type-check:
 	cd data_pipeline && uv sync --extra dev && uv run ty check
 
 quality: format lint type-check
-	@echo "✓ All quality checks passed!"
+	@echo "✓ Data pipeline quality checks passed!"
 
-check-all: quality test
-	@echo "✓ All checks passed (quality + tests)!"
+check-all: quality-all test-all
+	@echo "✓ All checks passed (quality + tests for both projects)!"
 
 test:
 	cd data_pipeline && uv run pytest
@@ -114,6 +118,9 @@ lint-backend:
 format-backend:
 	cd backend && uv run ruff format .
 
+quality-backend: format-backend lint-backend
+	@echo "✓ Backend quality checks passed!"
+
 test-backend:
 	cd backend && uv run pytest
 
@@ -123,6 +130,9 @@ run-backend:
 # ---------------------------------------------------------------------------
 # All
 # ---------------------------------------------------------------------------
+
+quality-all: quality quality-backend
+	@echo "✓ All quality checks passed!"
 
 install-all: install install-backend
 

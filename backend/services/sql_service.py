@@ -3,7 +3,6 @@
 import sqlite3
 from pathlib import Path
 
-
 TABLE_SCHEMAS = """Available tables and their schemas:
 
 TABLE: kpi_catalog
