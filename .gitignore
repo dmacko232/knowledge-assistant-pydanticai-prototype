@@ -61,6 +61,9 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+# Repo-root database folder (SQLite files only); do not ignore data_pipeline/database/ (Python package)
+/database/*.sqlite
+/database/*
 
 # Flask stuff:
 instance/
@@ -137,13 +140,27 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.*.local
 .envrc
+
+# Claude personal overrides (keep .claude/CLAUDE.md committed)
+.claude/*.local
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Databases (generated SQLite files at repo root only)
+/database/
+*.sqlite
+*.sqlite3
+*.db
+
+# Data pipeline outputs
+data_pipeline/output/
 
 # Spyder project settings
 .spyderproject
