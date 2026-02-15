@@ -6,15 +6,6 @@
 - answers must have citations
 - If the KB doesn’t contain the answer, respond with: **“I can’t find this in the knowledge base”** and ask a clarifying question.
 
-## TODO
-1. Anaylse raw data
-2. Write down design doc
-3. Data pipeline, setup of vector DB
-4. Backend
-5. Simple frontend
-6. Dockerization
-7. Presentation
-
 ## Solution Design
 
 - three components: data pipeline, backend, frontend
@@ -57,5 +48,5 @@ Additional features later on
 
 ### Frontend
 - simple prototype in chainlit (Python lib), later on in Typescript+React
-- simple chat UI
+- simple chat UI, ability to view citations etc
 - later on ability to give feedback

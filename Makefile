@@ -1,109 +1,85 @@
-.PHONY: help install lint format type-check test clean
+.PHONY: help install install-dev test test-cov lint format type-check quality check-all clean run-pipeline reset-db stats
 
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Available targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help:
+	@echo "Available commands:"
+	@echo ""
+	@echo "Setup & Installation:"
+	@echo "  make install        - Install data_pipeline dependencies"
+	@echo "  make install-dev    - Install with dev dependencies (pytest, ruff, ty)"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make lint          - Run ruff linter (auto-fixes issues)"
+	@echo "  make format        - Format code with ruff"
+	@echo "  make type-check    - Run ty type checker"
+	@echo "  make quality       - Run all quality checks (format + lint + type-check)"
+	@echo "  make check-all     - Run everything (quality + tests)"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make test          - Run unit tests"
+	@echo "  make test-cov      - Run tests with coverage report"
+	@echo ""
+	@echo "Pipeline:"
+	@echo "  make run-pipeline  - Run the full data pipeline"
+	@echo "  make run           - Shortcut for run-pipeline"
+	@echo "  make reset-db      - Reset database (drop all tables)"
+	@echo "  make stats         - Show database statistics"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make clean         - Clean up generated files"
+	@echo "  make check-env     - Validate configuration"
 
-# =============================================================================
-# Installation
-# =============================================================================
+install:
+	cd data_pipeline && pip install -e .
 
-install: ## Install all dependencies for all components
-	@echo "📦 Installing data_analysis dependencies..."
-	cd data_analysis && uv sync
-	@echo "📦 Installing backend dependencies..."
-	cd backend && uv sync
-	@echo "📦 Installing data_pipeline dependencies..."
-	cd data_pipeline && uv sync
-	@echo "📦 Installing frontend dependencies..."
-	cd frontend && npm ci
-	@echo "✅ All dependencies installed!"
+install-dev:
+	cd data_pipeline && pip install -e ".[dev]"
 
-# =============================================================================
-# Linting & Formatting
-# =============================================================================
+lint:
+	cd data_pipeline && uv run ruff check --fix --unsafe-fixes .
 
-lint: ## Run linters on all components
-	@echo "🔍 Linting data_analysis..."
-	cd data_analysis && uv run ruff check .
-	@echo "🔍 Linting backend..."
-	cd backend && uv run ruff check . || true
-	@echo "🔍 Linting data_pipeline..."
-	cd data_pipeline && uv run ruff check . || true
-	@echo "🔍 Linting frontend..."
-	cd frontend && npm run lint || true
+format:
+	cd data_pipeline && uv run ruff format .
 
-format: ## Format code in all components
-	@echo "✨ Formatting data_analysis..."
-	cd data_analysis && uv run ruff format .
-	@echo "✨ Formatting backend..."
-	cd backend && uv run ruff format . || true
-	@echo "✨ Formatting data_pipeline..."
-	cd data_pipeline && uv run ruff format . || true
-	@echo "✨ Formatting frontend..."
-	cd frontend && npm run format || true
+type-check:
+	cd data_pipeline && uv sync --extra dev && uv run ty check
 
-type-check: ## Run type checking on all components (mypy + ty)
-	@echo "🔎 Type checking data_analysis with mypy..."
-	cd data_analysis && uv run mypy analyze.py
-	@echo "🔎 Type checking data_analysis with ty..."
-	cd data_analysis && uv run ty check analyze.py || true
-	@echo "🔎 Type checking backend with mypy..."
-	cd backend && uv run mypy . || true
-	@echo "🔎 Type checking backend with ty..."
-	cd backend && uv run ty check . || true
-	@echo "🔎 Type checking data_pipeline with mypy..."
-	cd data_pipeline && uv run mypy . || true
-	@echo "🔎 Type checking data_pipeline with ty..."
-	cd data_pipeline && uv run ty check . || true
-	@echo "🔎 Type checking frontend..."
-	cd frontend && npm run type-check || true
+quality: format lint type-check
+	@echo "✓ All quality checks passed!"
 
-# =============================================================================
-# Testing
-# =============================================================================
+check-all: quality test
+	@echo "✓ All checks passed (quality + tests)!"
 
-test: ## Run tests for all components
-	@echo "🧪 Testing data_analysis..."
-	cd data_analysis && uv run pytest || true
-	@echo "🧪 Testing backend..."
-	cd backend && uv run pytest || true
-	@echo "🧪 Testing data_pipeline..."
-	cd data_pipeline && uv run pytest || true
-	@echo "🧪 Testing frontend..."
-	cd frontend && npm test || true
+test:
+	cd data_pipeline && uv run pytest
 
-# =============================================================================
-# Data Analysis
-# =============================================================================
+test-cov:
+	cd data_pipeline && uv run pytest --cov=. --cov-report=html --cov-report=term
+	@echo "Coverage report: data_pipeline/htmlcov/index.html"
 
-analyze: ## Run data analysis
-	@echo "📊 Running data analysis..."
-	cd data_analysis && uv run python analyze.py
+clean:
+	@echo "Cleaning up..."
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".ty_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name ".coverage" -delete 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@rm -rf database/*.sqlite 2>/dev/null || true
+	@echo "✓ Cleanup complete"
 
-# =============================================================================
-# Cleanup
-# =============================================================================
+run-pipeline:
+	cd data_pipeline && python main.py process-all
 
-clean: ## Remove build artifacts and caches
-	@echo "🧹 Cleaning up..."
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name ".coverage" -delete 2>/dev/null || true
-	find . -type f -name "coverage.xml" -delete 2>/dev/null || true
-	@echo "✅ Cleanup complete!"
+reset-db:
+	cd data_pipeline && python main.py reset
 
-# =============================================================================
-# CI/CD
-# =============================================================================
+stats:
+	cd data_pipeline && python main.py stats
 
-ci: lint type-check test ## Run all CI checks locally
-	@echo "✅ All CI checks passed!"
+check-env:
+	cd data_pipeline && python -c "import config; config.validate_config()"
+
+# Shortcut
+run: run-pipeline
