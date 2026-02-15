@@ -3,17 +3,17 @@
 #
 # Usage:
 #   1. Copy .env files:
-#        cp data_pipeline/.env.example data_pipeline/.env
-#        cp backend/.env.example backend/.env
+#        cp src/data_pipeline/.env.example src/data_pipeline/.env
+#        cp src/backend/.env.example src/backend/.env
 #      Then fill in your Azure OpenAI credentials.
 #
 #   2. Run the data pipeline (one-off, builds the database):
 #        docker compose run --rm data-pipeline
 #
-#   3. Start the backend API server:
-#        docker compose up backend
+#   3. Start backend + frontend together:
+#        docker compose up backend frontend
 #
-#   4. Or run everything in sequence:
+#   4. Or run everything in sequence (pipeline → backend → frontend):
 #        docker compose up
 # --------------------------------------------------------------------------
 
@@ -24,9 +24,9 @@ services:
   # -----------------------------------------------------------------------
   data-pipeline:
     build:
-      context: data_pipeline/
+      context: src/data_pipeline/
     env_file:
-      - data_pipeline/.env
+      - src/data_pipeline/.env
     volumes:
       # Raw data (read-only input) — mounted where config.py expects it
       - ./data:/data:ro
@@ -39,14 +39,14 @@ services:
   # -----------------------------------------------------------------------
   backend:
     build:
-      context: backend/
+      context: src/backend/
     env_file:
-      - backend/.env
+      - src/backend/.env
     ports:
       - "8000:8000"
     volumes:
-      # Shared database (read-only for the backend)
-      - db-data:/database:ro
+      # Shared database (read + write — chat history is persisted here)
+      - db-data:/database
     depends_on:
       data-pipeline:
         condition: service_completed_successfully
@@ -56,6 +56,18 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # -----------------------------------------------------------------------
+  # Frontend — React SPA served by nginx, proxies /api to backend
+  # -----------------------------------------------------------------------
+  frontend:
+    build:
+      context: src/frontend/
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   db-data:
