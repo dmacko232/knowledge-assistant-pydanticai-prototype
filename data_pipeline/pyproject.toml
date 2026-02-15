@@ -21,6 +21,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.1.0",
     "ty>=0.0.17",
+    "pre-commit>=3.0.0",
 ]
 
 [tool.ruff]
@@ -35,8 +36,18 @@ ignore = ["E501"]  # Line too long (handled by formatter)
 data-pipeline = "main:cli"
 
 [tool.setuptools]
-packages = ["database", "processors", "utils"]
+packages = ["database", "processors", "services", "utils"]
 py-modules = ["main", "config"]
+
+# So ty finds first-party modules when run from this dir
+[tool.ty.environment]
+root = ["."]
+
+# Editable-install layout: ty often can't resolve in-tree packages (database, processors, services).
+# Runtime and pytest resolve them; ignore here so pre-commit/check-all passes.
+[tool.ty.rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
 
 [build-system]
 requires = ["setuptools>=61.0"]

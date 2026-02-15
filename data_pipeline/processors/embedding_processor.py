@@ -85,7 +85,9 @@ if __name__ == "__main__":
     from database.models import DocumentChunk
 
     if not (config.AZURE_OPENAI_EMBEDDING_API_KEY or config.AZURE_OPENAI_API_KEY):
-        print("⚠ No Azure OpenAI API key set. Set AZURE_OPENAI_API_KEY or AZURE_OPENAI_EMBEDDING_API_KEY in .env")
+        print(
+            "⚠ No Azure OpenAI API key set. Set AZURE_OPENAI_API_KEY or AZURE_OPENAI_EMBEDDING_API_KEY in .env"
+        )
     else:
         processor = EmbeddingProcessor()
 

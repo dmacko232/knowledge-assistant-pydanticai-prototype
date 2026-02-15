@@ -223,9 +223,7 @@ def dump_db(sample: int, schema: bool):
     cur = conn.cursor()
 
     # List tables (including virtual)
-    cur.execute(
-        "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') ORDER BY name"
-    )
+    cur.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view') ORDER BY name")
     tables = [row[0] for row in cur.fetchall()]
 
     click.echo(f"Database: {config.DB_PATH}\n")
