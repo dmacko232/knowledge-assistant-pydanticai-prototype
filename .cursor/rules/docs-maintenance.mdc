@@ -1,0 +1,14 @@
+---
+description: Keep README and architecture docs in sync after code changes
+alwaysApply: true
+---
+
+# Documentation Maintenance
+
+After making functional changes to the codebase (new features, changed APIs, new endpoints, config changes, new files/modules), update the relevant documentation:
+
+- **`README.md`** — Update if the change affects setup instructions, project structure, available commands, or the quick-start guide.
+- **`docs/architecture/backend.md`** — Update if the change affects backend structure, API endpoints, services, configuration, retrieval pipeline, chat flow, or test counts.
+- **`docs/architecture/data_pipeline.md`** — Update if the change affects pipeline steps, database schema, CLI commands, configuration, or processing logic.
+
+Do NOT update docs for trivial changes (typo fixes, internal refactors with no public-facing impact, test-only changes).

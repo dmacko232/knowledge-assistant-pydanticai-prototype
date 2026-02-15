@@ -1,0 +1,91 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop, feat/*]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "No package.json found, skipping dependency installation"
+          fi
+
+      - name: Run ESLint
+        run: |
+          if [ -f package.json ] && npm run --silent 2>&1 | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No lint script found, skipping linting"
+          fi
+        continue-on-error: true
+
+      - name: Run Prettier check
+        run: |
+          if [ -f package.json ] && npm run --silent 2>&1 | grep -q "format:check"; then
+            npm run format:check
+          else
+            echo "No format:check script found, skipping format check"
+          fi
+        continue-on-error: true
+
+      - name: Run TypeScript type checking
+        run: |
+          if [ -f tsconfig.json ]; then
+            npm run type-check || npx tsc --noEmit
+          else
+            echo "No tsconfig.json found, skipping type checking"
+          fi
+        continue-on-error: true
+
+      - name: Run tests
+        run: |
+          if [ -f package.json ] && npm run --silent 2>&1 | grep -q "test"; then
+            npm run test -- --coverage
+          else
+            echo "No test script found, skipping tests"
+          fi
+        continue-on-error: true
+
+      - name: Build
+        run: |
+          if [ -f package.json ] && npm run --silent 2>&1 | grep -q "build"; then
+            npm run build
+          else
+            echo "No build script found, skipping build"
+          fi
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+          retention-days: 7
+        continue-on-error: true

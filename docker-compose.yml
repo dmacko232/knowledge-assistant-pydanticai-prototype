@@ -1,0 +1,74 @@
+# --------------------------------------------------------------------------
+# Docker Compose — Knowledge Assistant
+#
+# Usage:
+#   1. Copy .env files:
+#        cp src/data_pipeline/.env.example src/data_pipeline/.env
+#        cp src/backend/.env.example src/backend/.env
+#      Then fill in your Azure OpenAI credentials.
+#
+#   2. Run the data pipeline (one-off, builds the database):
+#        docker compose run --rm data-pipeline
+#
+#   3. Start backend + frontend together:
+#        docker compose up backend frontend
+#
+#   4. Or run everything in sequence (pipeline → backend → frontend):
+#        docker compose up
+# --------------------------------------------------------------------------
+
+services:
+  # -----------------------------------------------------------------------
+  # Data Pipeline — processes raw data into the SQLite database
+  # Run once (or whenever data changes) before starting the backend.
+  # -----------------------------------------------------------------------
+  data-pipeline:
+    build:
+      context: src/data_pipeline/
+    env_file:
+      - src/data_pipeline/.env
+    volumes:
+      # Raw data (read-only input) — mounted where config.py expects it
+      - ./data:/data:ro
+      # Shared database output — backend reads from here
+      - db-data:/database
+    working_dir: /app
+
+  # -----------------------------------------------------------------------
+  # Backend — FastAPI server with the PydanticAI agent
+  # -----------------------------------------------------------------------
+  backend:
+    build:
+      context: src/backend/
+    env_file:
+      - src/backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Shared database (read + write — chat history is persisted here)
+      - db-data:/database
+    depends_on:
+      data-pipeline:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # -----------------------------------------------------------------------
+  # Frontend — React SPA served by nginx, proxies /api to backend
+  # -----------------------------------------------------------------------
+  frontend:
+    build:
+      context: src/frontend/
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db-data:
+    driver: local

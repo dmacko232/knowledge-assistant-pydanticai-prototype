@@ -1,0 +1,16 @@
+# See https://pre-commit.com for more
+#
+# Install (from repo root, using uv):
+#   cd data_pipeline && uv sync --extra dev
+#   cd data_pipeline && uv run pre-commit install
+#
+# Run manually: cd data_pipeline && uv run pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: check-all
+        name: make check-all
+        entry: make check-all
+        language: system
+        pass_filenames: false

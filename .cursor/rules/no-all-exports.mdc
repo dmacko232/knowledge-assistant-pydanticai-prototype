@@ -1,0 +1,21 @@
+---
+description: Do not use __all__ re-exports in __init__.py files
+alwaysApply: true
+---
+
+# No `__all__` in `__init__.py`
+
+Do NOT add `__all__` lists or convenience re-exports in `__init__.py` files. Keep `__init__.py` files minimal — they should contain at most a module docstring.
+
+Consumers must import symbols directly from the module that defines them:
+
+```python
+# Good — import from the defining module
+from use_cases.chat import ChatUseCase
+from database.models import DocumentChunk
+
+# Bad — re-export via __init__.py
+from use_cases import ChatUseCase
+```
+
+This keeps the dependency graph explicit and avoids circular-import pitfalls.

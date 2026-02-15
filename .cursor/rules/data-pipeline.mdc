@@ -1,0 +1,14 @@
+---
+description: Data pipeline code style and conventions
+globs: ["data_pipeline/**/*.py"]
+alwaysApply: false
+---
+
+# Data pipeline
+
+- Use **absolute imports** (e.g. `from database.models import ...`), never relative (`from .models import ...`).
+- Run quality and tests from **repo root**: `make check-all`, `make test`, `make quality`.
+- **Chunking**: One DB chunk per section; split a section only if over token limit. Retrieval chunk = preprocessed for embedding; generation chunk = full section (raw markdown).
+- **Config**: Load env from `data_pipeline/.env` via `config.py`. Use `AZURE_OPENAI_EMBEDDING_*` for embedding endpoint/version/deployment.
+- **Database**: SQLModel for models; sqlite-vec + FTS5. Serialize embeddings with `serialize_float32()` before sqlite.
+- **Tests**: pytest in `data_pipeline/tests/`, absolute imports, fixtures in `conftest.py`.

@@ -6,22 +6,13 @@
 - answers must have citations
 - If the KB doesn’t contain the answer, respond with: **“I can’t find this in the knowledge base”** and ask a clarifying question.
 
-## TODO
-1. Anaylse raw data
-2. Write down design doc
-3. Data pipeline, setup of vector DB
-4. Backend 
-5. Simple frontend
-6. Dockerization
-7. Presentation
-
 ## Solution Design
 
 - three components: data pipeline, backend, frontend
 
 ### Data pipeline
 
-Generally, we use 
+Generally, we use
 - vector DB (in our case for simplicity vector plugin of sqlite) to store and chunks of the documents
 - relational DB for analytical workload (we would have many reads on BE and ocassional write during data pipeline)
 The pipeline would be composed of two steps:
@@ -42,12 +33,15 @@ Processing of structured and semi-structured data:
 - we would parse the kpi_catalog.csv and directory and store them as two separate tables in SQL DB
 
 ### Backend
-- agent written in PydanticAI framework, FastAPI bakcned
+- agent written in PydanticAI framework, FastAPI backend
+- schema for SQL DB will be User/Session/Response; the Response will have 
 - two tools, one to look up data in SQL DB and second one to search KB
-- retrieval tool is standard pipeline of embedding -> search -> reranker
+- SQL DB tool must allow looking into KPI and directory, allow it to see the schemas; also please specify that the tool needs to write sql query according to the whole history
+- retrieval tool is standard pipeline of embedding model and rpeprocessing for bm25 and embedding -> search -> reranker; the tool specifies the query needs to be standalone question rewritten from chat history
 - prompt forces to LLM to say it doesnt know
 - prompt forces LLM to check date of information per chunks and prefer authoritative/newer ones. (Could be also partially done programatically to let LLM know)
-- include citations on output
+- include citations on output, please add citations after each sentence/statement with [1], [2] etc
+- tests must be included
 
 Additional features later on
 - store chat history in transactional DB
@@ -57,5 +51,5 @@ Additional features later on
 
 ### Frontend
 - simple prototype in chainlit (Python lib), later on in Typescript+React
-- simple chat UI
+- simple chat UI, ability to view citations etc
 - later on ability to give feedback
