@@ -28,13 +28,18 @@ data_pipeline/
 ├── utils/
 │   ├── text_utils.py                # Tokenization, stop-word removal, lemmatization
 │   └── markdown_utils.py            # Heading-based markdown splitting
-└── tests/
-    ├── conftest.py
-    ├── test_document_processor.py
-    ├── test_embedding_service.py
-    ├── test_vector_store.py
-    ├── test_relational_store.py
-    └── test_structured_processor.py
+```
+
+Tests live at the project root in `tests/data_pipeline/`:
+
+```
+tests/data_pipeline/
+├── conftest.py                    # sys.path setup + shared fixtures
+├── test_document_processor.py
+├── test_embedding_service.py
+├── test_vector_store.py
+├── test_relational_store.py
+└── test_structured_processor.py
 ```
 
 ---
