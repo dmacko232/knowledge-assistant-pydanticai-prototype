@@ -20,19 +20,18 @@ describe("Login page", () => {
     expect(
       screen.getByText("Northwind Knowledge Assistant")
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it("shows validation error when fields are empty", async () => {
+  it("shows validation error when email is empty", async () => {
     const user = userEvent.setup();
     renderWithProviders(<Login />, { user: null, route: "/login" });
 
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(
-      screen.getByText("Name and email are required")
+      screen.getByText("Email is required")
     ).toBeInTheDocument();
     expect(api.login).not.toHaveBeenCalled();
   });
@@ -50,12 +49,11 @@ describe("Login page", () => {
       route: "/login",
     });
 
-    await user.type(screen.getByLabelText("Name"), "Alice");
     await user.type(screen.getByLabelText("Email"), "alice@northwind.com");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(api.login).toHaveBeenCalledWith("Alice", "alice@northwind.com");
+      expect(api.login).toHaveBeenCalledWith("alice@northwind.com");
     });
 
     await waitFor(() => {
@@ -69,16 +67,15 @@ describe("Login page", () => {
 
   it("shows error message when login fails", async () => {
     const user = userEvent.setup();
-    vi.mocked(api.login).mockRejectedValue(new Error("Login failed: 500"));
+    vi.mocked(api.login).mockRejectedValue(new Error("No account found for this email."));
 
     renderWithProviders(<Login />, { user: null, route: "/login" });
 
-    await user.type(screen.getByLabelText("Name"), "Alice");
-    await user.type(screen.getByLabelText("Email"), "alice@northwind.com");
+    await user.type(screen.getByLabelText("Email"), "unknown@evil.com");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("Login failed: 500")).toBeInTheDocument();
+      expect(screen.getByText("No account found for this email.")).toBeInTheDocument();
     });
   });
 });

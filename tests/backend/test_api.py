@@ -67,8 +67,10 @@ class TestAuthEndpoint:
     """Test the /auth/login endpoint."""
 
     @pytest.fixture()
-    def client(self, tmp_path):
+    def client_open(self, tmp_path):
+        """Client with open registration enabled."""
         settings = _test_settings(tmp_path)
+        settings.open_registration = True
         with (
             patch("config.get_settings", return_value=settings),
             patch("config.Settings.validate_runtime"),
@@ -77,12 +79,33 @@ class TestAuthEndpoint:
 
             with TestClient(app) as c:
                 hist = _make_history_service(tmp_path)
+                app.state.settings = settings
                 app.state.history = hist
                 yield c
                 hist.close()
 
-    def test_login_returns_token(self, client: TestClient):
-        response = client.post(
+    @pytest.fixture()
+    def client_closed(self, tmp_path):
+        """Client with open registration disabled (default)."""
+        settings = _test_settings(tmp_path)
+        settings.open_registration = False
+        with (
+            patch("config.get_settings", return_value=settings),
+            patch("config.Settings.validate_runtime"),
+        ):
+            from main import app
+
+            with TestClient(app) as c:
+                hist = _make_history_service(tmp_path)
+                # Seed a registered user
+                hist.seed_users([{"name": "Alice", "email": "alice@northwind.com"}])
+                app.state.settings = settings
+                app.state.history = hist
+                yield c
+                hist.close()
+
+    def test_login_returns_token(self, client_open: TestClient):
+        response = client_open.post(
             "/auth/login", json={"name": "Alice", "email": "alice@northwind.com"}
         )
         assert response.status_code == 200
@@ -91,10 +114,26 @@ class TestAuthEndpoint:
         assert body["name"] == "Alice"
         assert body["user_id"]
 
-    def test_login_same_email_returns_same_user(self, client: TestClient):
-        r1 = client.post("/auth/login", json={"name": "Alice", "email": "alice@northwind.com"})
-        r2 = client.post("/auth/login", json={"name": "Alice", "email": "alice@northwind.com"})
+    def test_login_same_email_returns_same_user(self, client_open: TestClient):
+        r1 = client_open.post("/auth/login", json={"name": "Alice", "email": "alice@northwind.com"})
+        r2 = client_open.post("/auth/login", json={"name": "Alice", "email": "alice@northwind.com"})
         assert r1.json()["user_id"] == r2.json()["user_id"]
+
+    def test_registered_user_can_login(self, client_closed: TestClient):
+        response = client_closed.post(
+            "/auth/login", json={"email": "alice@northwind.com"}
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["name"] == "Alice"
+        assert "token" in body
+
+    def test_unregistered_user_rejected(self, client_closed: TestClient):
+        response = client_closed.post(
+            "/auth/login", json={"email": "unknown@evil.com"}
+        )
+        assert response.status_code == 401
+        assert "No account found" in response.json()["detail"]
 
 
 class TestChatEndpoint:
@@ -380,14 +419,15 @@ class TestSettings:
         assert s.auth_enabled is True
         assert s.jwt_secret == "dev-secret-change-in-production!!"
         assert s.jwt_expiry_hours == 24
+        assert s.open_registration is False
 
-    def test_otel_defaults(self):
+    def test_observability_defaults(self):
         s = Settings(
             _env_file=None,
             azure_openai_api_key="k",
             azure_openai_endpoint="https://ep.openai.azure.com/",
         )
-        assert s.otel_enabled is False
+        assert s.observability == "off"
         assert s.otel_service_name == "knowledge-assistant-backend"
         assert s.otel_exporter_otlp_endpoint == "http://localhost:4318"
         assert s.otel_console_exporter is False

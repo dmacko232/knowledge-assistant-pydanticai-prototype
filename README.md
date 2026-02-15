@@ -30,7 +30,12 @@ The agent is prompt-engineered to ground every answer in retrieved sources, incl
 
 JWT authentication is built in and toggleable via `AUTH_ENABLED` (default: `true`). When disabled, a mock user is injected for development.
 
-OpenTelemetry instrumentation is built in and toggleable via `OTEL_ENABLED` (default: `false`). When enabled, traces are emitted for all HTTP requests and PydanticAI agent calls.
+Observability is built in and controlled via `OBSERVABILITY` (default: `off`). Supported modes:
+- `logfire` — Pydantic Logfire (set `LOGFIRE_TOKEN`)
+- `otel` — raw OpenTelemetry with OTLP HTTP exporter
+- `off` — disabled (default)
+
+When enabled, traces are emitted for all HTTP requests and PydanticAI agent calls.
 
 ### Frontend
 A React single-page application providing a ChatGPT-like chat interface. Features include:
@@ -90,7 +95,16 @@ The frontend proxies `/api/*` requests to the backend at `localhost:8000` during
 
 ### 4. Try It Out
 
-Open [http://localhost:3000](http://localhost:3000) in your browser, sign in with any name/email, and start asking questions.
+Open [http://localhost:3000](http://localhost:3000) in your browser, sign in with a pre-registered email (e.g. `alice@northwind.com`), and start asking questions.
+
+### 5. Seed Demo Chats (Optional)
+
+```bash
+# With the backend running, populate 5 demo chats with real answers:
+make seed-demo
+```
+
+This sends the 5 acceptance-test questions through the backend and generates titles. Perfect for demos — the sidebar will already show chats with answers.
 
 API docs are also available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
@@ -158,7 +172,7 @@ knowledge-assistant-pydanticai-prototype/
 │   │   ├── config.py              # Configuration (pydantic-settings)
 │   │   ├── agent.py               # PydanticAI agent with tools & system prompt
 │   │   ├── auth.py                # JWT authentication helpers
-│   │   ├── telemetry.py           # OpenTelemetry setup (OTEL_ENABLED toggle)
+│   │   ├── telemetry.py           # Observability setup (logfire / otel / off)
 │   │   ├── models.py              # API request/response schemas
 │   │   ├── use_cases/             # Business logic (ChatUseCase)
 │   │   └── services/              # Retrieval, SQL, chat history services
@@ -181,7 +195,11 @@ knowledge-assistant-pydanticai-prototype/
 │       ├── documents/             # Markdown KB (domain/, policies/, runbooks/)
 │       └── structured/            # kpi_catalog.csv, directory.json
 ├── database/                      # Generated SQLite database (after pipeline run)
-├── docs/                          # Design document, architecture docs, diagrams
+├── scripts/
+│   └── seed_demo.py               # Seed demo chats for presentation
+├── docs/
+│   ├── architecture/              # Architecture documentation
+│   └── presentation.html          # reveal.js slide deck
 ├── docker-compose.yml             # Docker Compose for running the full stack
 └── Makefile                       # All build, test, run, and Docker commands
 ```

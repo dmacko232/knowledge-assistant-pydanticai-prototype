@@ -155,6 +155,34 @@ class ChatHistoryService:
         self.conn.commit()
         return User(id=user_id, name=name, email=email, created_at=now)
 
+    def get_user_by_email(self, email: str) -> User | None:
+        """Look up a user by email address."""
+        assert self.conn
+        row = self.conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        if not row:
+            return None
+        return User(
+            id=row["id"], name=row["name"], email=row["email"], created_at=row["created_at"]
+        )
+
+    def seed_users(self, users: list[dict]) -> None:
+        """Seed pre-registered users. Skips users whose email already exists.
+
+        Each dict must have keys: name, email.
+        """
+        assert self.conn
+        for u in users:
+            existing = self.get_user_by_email(u["email"])
+            if not existing:
+                user_id = str(uuid.uuid4())
+                now = _utcnow()
+                self.conn.execute(
+                    "INSERT INTO users (id, name, email, created_at) VALUES (?, ?, ?, ?)",
+                    (user_id, u["name"], u["email"], now),
+                )
+                logger.info("Seeded user: {} ({})", u["name"], u["email"])
+        self.conn.commit()
+
     def get_user(self, user_id: str) -> User | None:
         assert self.conn
         row = self.conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()

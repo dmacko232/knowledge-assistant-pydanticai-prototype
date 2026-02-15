@@ -21,7 +21,7 @@ describe("App routing", () => {
     expect(
       screen.getByText("Northwind Knowledge Assistant")
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeInTheDocument();
   });
 
   it("shows chat page when authenticated", () => {
@@ -61,6 +61,6 @@ describe("App routing", () => {
     );
 
     expect(screen.getByText("Knowledge Assistant")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
 });

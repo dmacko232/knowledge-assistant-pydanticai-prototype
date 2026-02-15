@@ -16,6 +16,11 @@ import pytest
 from services.sql_service import SQLService
 
 
+def pytest_configure(config):
+    """Set pytest-asyncio mode to auto so async test functions work without markers."""
+    config.option.asyncio_mode = "auto"
+
+
 @pytest.fixture()
 def tmp_db(tmp_path: Path) -> Path:
     """Create a temporary SQLite database with KPI and directory tables populated."""

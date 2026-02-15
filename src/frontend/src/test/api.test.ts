@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 describe("login", () => {
-  it("calls POST /api/auth/login with name and email", async () => {
+  it("calls POST /api/auth/login with email", async () => {
     const mockResponse = {
       token: "tok-1",
       user_id: "u-1",
@@ -30,19 +30,33 @@ describe("login", () => {
     };
     vi.stubGlobal("fetch", mockFetchResponse(mockResponse));
 
-    const result = await login("Alice", "alice@northwind.com");
+    const result = await login("alice@northwind.com");
 
     expect(fetch).toHaveBeenCalledWith("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Alice", email: "alice@northwind.com" }),
+      body: JSON.stringify({ email: "alice@northwind.com" }),
     });
     expect(result).toEqual(mockResponse);
   });
 
   it("throws on non-OK response", async () => {
     vi.stubGlobal("fetch", mockFetchResponse({}, 500));
-    await expect(login("A", "a@b.com")).rejects.toThrow("Login failed: 500");
+    await expect(login("a@b.com")).rejects.toThrow("Login failed: 500");
+  });
+
+  it("throws with detail message on 401", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ detail: "No account found for this email." }),
+      })
+    );
+    await expect(login("unknown@evil.com")).rejects.toThrow(
+      "No account found for this email."
+    );
   });
 });
 

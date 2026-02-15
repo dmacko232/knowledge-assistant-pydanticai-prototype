@@ -24,7 +24,9 @@ class ChatMessage(BaseModel):
 class LoginRequest(BaseModel):
     """Request body for POST /auth/login."""
 
-    name: str = Field(description="User display name")
+    name: str = Field(
+        default="", description="User display name (used only with open registration)"
+    )
     email: str = Field(description="User email")
 
 

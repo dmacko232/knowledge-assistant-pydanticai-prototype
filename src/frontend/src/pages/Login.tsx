@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Loader2 } from "lucide-react";
 import { useAuth } from "../auth";
 import { login as apiLogin } from "../api";
+import { logger } from "../logger";
+
+const log = logger("login");
 
 export default function Login() {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,18 +16,21 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      setError("Name and email are required");
+    if (!email.trim()) {
+      setError("Email is required");
       return;
     }
     setError("");
     setLoading(true);
     try {
-      const result = await apiLogin(name.trim(), email.trim());
+      const result = await apiLogin(email.trim());
+      log.info("Authenticated, navigating to chat", { name: result.name });
       login({ token: result.token, user_id: result.user_id, name: result.name });
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const msg = err instanceof Error ? err.message : "Login failed";
+      log.warn("Login error", { email: email.trim(), error: msg });
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -40,7 +45,7 @@ export default function Login() {
             Northwind Knowledge Assistant
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Sign in to ask questions about policies, runbooks, KPIs, and more.
+            Sign in with your registered email to get started.
           </p>
         </div>
 
@@ -48,20 +53,6 @@ export default function Login() {
           onSubmit={handleSubmit}
           className="rounded-xl border border-slate-700 bg-slate-800/50 p-6 shadow-2xl backdrop-blur"
         >
-          <div className="mb-4">
-            <label htmlFor="login-name" className="mb-1.5 block text-sm font-medium text-slate-300">
-              Name
-            </label>
-            <input
-              id="login-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Alice Smith"
-              className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-white placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
           <div className="mb-5">
             <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-300">
               Email
@@ -94,6 +85,10 @@ export default function Login() {
             )}
             Sign In
           </button>
+
+          <p className="mt-4 text-center text-xs text-slate-500">
+            Test account: <span className="text-slate-400">alice@northwind.com</span>
+          </p>
         </form>
       </div>
     </div>

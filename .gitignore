@@ -157,6 +157,7 @@ venv.bak/
 
 # Data pipeline outputs
 data_pipeline/output/
+src/data_pipeline/output/
 
 # Spyder project settings
 .spyderproject
