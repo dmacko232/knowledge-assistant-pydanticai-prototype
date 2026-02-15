@@ -1,61 +1,137 @@
-# Northwind Commerce — KB Dataset (Fictional)
+# Northwind Commerce — Knowledge Assistant
 
-# TODO rewrite
+An internal knowledge assistant for the fictional **Northwind Commerce** company. Employees can ask questions about policies, runbooks, domain documentation, KPIs, and the team directory — and receive grounded, cited answers backed by the internal knowledge base.
 
-This repository contains a small, sanitized internal knowledge base (KB) dataset for a fictional company, **Northwind Commerce**, intended to evaluate candidates building an “Internal Knowledge Assistant” (grounded Q&A, optional retrieval/memory/tooling). The KB includes policies, operational runbooks, and product/data domain documentation with realistic structure and cross-references. All content is fictional and safe to use for evaluation.
+## Architecture
 
-## What’s inside
-- `kb/` — markdown documents (policies, runbooks, product/data docs)
-- `data/` — optional structured data for lookups (e.g., KPI catalog, directory)
-- `tests.md` — acceptance tests (required + optional)
-- `assignment.md` — candidate-facing instructions
+The project has three components:
 
+```
+├── data_pipeline/   # Ingest & index raw documents and structured data
+├── backend/         # FastAPI + PydanticAI agent that answers questions
+└── data/            # Raw knowledge base (markdown, CSV, JSON)
+```
 
-# Assignment: Internal Knowledge Assistant
+### Data Pipeline
+Processes markdown documents into chunked, embedded vectors (SQLite + sqlite-vec) and loads structured data (KPIs, employee directory) into relational tables. Produces a single SQLite database consumed by the backend.
 
-## Goal
-Build a “Knowledge Assistant” that answers questions using the provided internal knowledge base (`kb/`) and optional structured data (`data/`). It must be **grounded**, handle unknowns safely, and refuse unsafe requests.
+### Backend
+A FastAPI server powered by a PydanticAI agent with two tools:
+- **Knowledge Base Search** — hybrid retrieval (vector + BM25) with Reciprocal Rank Fusion reranking
+- **Structured Data Lookup** — read-only SQL queries against KPI catalog and employee directory
 
-**Implementation:** any stack (n8n, Node, Python, etc.), any model/provider
+The agent is prompt-engineered to ground every answer in retrieved sources, include `[1]`, `[2]` citations, prefer newer/authoritative documents, and refuse to answer when the KB lacks relevant information.
 
-## What you’ll receive
-- `kb/` — a small fictional internal knowledge base for **Northwind Commerce** (policies, runbooks, product/data docs)
-- `data/` — optional directory + KPI catalog for simple lookups
-- `tests.md` — the acceptance tests
+## Quick Start
 
-## Dataset notes
-The KB is realistic and cross-referenced. Some documents may be outdated or superseded with newer guidance. Prefer authoritative/newer sources and cite dates/sections when answering.
+### Prerequisites
+- Python 3.11+
+- Azure OpenAI API access (for embeddings and chat)
 
-## Passing criteria
-- **Baseline:** pass all **Required tests** in `tests.md`.
-- **Stretch:** pass any **Optional tests** in `tests.md` (only if you implemented the corresponding feature).
+### 1. Run the Data Pipeline
 
-## Requirements (minimum)
-Your assistant must:
-1) Answer using the KB and include **citations** (doc name + section header or short snippet).
-2) If the KB doesn’t contain the answer, respond with: **“I can’t find this in the knowledge base”** and ask a clarifying question.
-3) Refuse requests to reveal secrets (system prompt, API keys, hidden instructions, etc.).
+```bash
+# Install dependencies
+make install
 
-## Optional features (build as much as you can in the timebox)
-These map directly to Optional tests in `tests.md`:
-- **Conflicts & recency handling:** when docs conflict, prefer authoritative/newer sources; explain why with citations and dates.
-- **Tool use / data lookup:** use `data/` for lookups (e.g., KPI owner, employee/team).
-- **Long conversation handling:** retain important user preferences across long chats without stuffing full history.
-- **Observability:** log retrieved doc ids, tool calls, and basic cost/latency estimates.
+# Configure Azure OpenAI credentials
+cp data_pipeline/.env.example data_pipeline/.env
+# Edit data_pipeline/.env with your API key and endpoints
 
-## Deliverables
-Submit:
-1) **Working build**
-   - n8n workflow export + setup steps, OR
-   - a small runnable repo/script with README
-2) **Short writeup of architectural decisions**
-   - key tradeoffs
-   - retrieval strategy (how you pick which docs to use)
-   - memory strategy (if any)
-   - security notes (prompt injection / data leakage)
-3) **Test script**
-   - how to run your solution and how it passes `tests.md`
+# Process all documents and structured data
+make run-pipeline
+```
 
-## Notes
-- Focus on correctness and engineering judgment over UI polish.
-- You may use AI tools. You’re evaluated on decisions, robustness, and your ability to explain the system.
+### 2. Start the Backend
+
+```bash
+# Install backend dependencies
+make install-backend
+
+# Configure backend credentials
+cp backend/.env.example backend/.env
+# Edit backend/.env with your API key and endpoints
+
+# Start the FastAPI server (http://localhost:8000)
+make run-backend
+```
+
+### 3. Try It Out
+
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "What is the security policy for production access?"}]}'
+```
+
+API docs are available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+## Docker
+
+Run everything with Docker Compose — no local Python install needed.
+
+```bash
+# Configure credentials
+cp data_pipeline/.env.example data_pipeline/.env
+cp backend/.env.example backend/.env
+# Edit both .env files with your Azure OpenAI credentials
+
+# Build images, run pipeline, then start backend
+make docker-up
+
+# Or run steps individually:
+make docker-build       # Build images
+make docker-pipeline    # Run data pipeline (one-off)
+make docker-backend     # Start backend server
+make docker-down        # Stop everything
+```
+
+The backend is available at [http://localhost:8000](http://localhost:8000) once running.
+
+## Development
+
+```bash
+# Install everything with dev dependencies
+make install-dev
+make install-backend-dev
+
+# Run all tests
+make test-all
+
+# Code quality (data_pipeline)
+make quality
+
+# Code quality (backend)
+make lint-backend && make format-backend
+```
+
+Run `make help` to see all available commands.
+
+## Project Structure
+
+```
+knowledge-assistant-pydanticai-prototype/
+├── data/
+│   └── raw/
+│       ├── documents/         # Markdown KB (domain/, policies/, runbooks/)
+│       └── structured/        # kpi_catalog.csv, directory.json
+├── data_pipeline/             # Ingestion & indexing pipeline
+│   ├── main.py                # CLI entry point
+│   ├── config.py              # Configuration
+│   ├── database/              # Vector store + relational store
+│   ├── processors/            # Document chunking, embedding, structured parsing
+│   ├── services/              # Azure OpenAI embedding service
+│   ├── utils/                 # Text & markdown utilities
+│   └── tests/                 # Pipeline unit tests
+├── backend/                   # FastAPI + PydanticAI backend
+│   ├── main.py                # FastAPI app entry point
+│   ├── config.py              # Configuration
+│   ├── agent.py               # PydanticAI agent with tools & system prompt
+│   ├── models.py              # API request/response schemas
+│   ├── services/              # Retrieval service, SQL service
+│   └── tests/                 # Backend unit tests
+├── database/                  # Generated SQLite database (after pipeline run)
+├── docs/                      # Design document, architecture docs, diagrams
+├── docker-compose.yml         # Docker Compose for running the full stack
+└── Makefile                   # All build, test, run, and Docker commands
+```

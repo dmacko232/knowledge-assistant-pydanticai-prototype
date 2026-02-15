@@ -1,0 +1,62 @@
+# --------------------------------------------------------------------------
+# Docker Compose — Knowledge Assistant
+#
+# Usage:
+#   1. Copy .env files:
+#        cp data_pipeline/.env.example data_pipeline/.env
+#        cp backend/.env.example backend/.env
+#      Then fill in your Azure OpenAI credentials.
+#
+#   2. Run the data pipeline (one-off, builds the database):
+#        docker compose run --rm data-pipeline
+#
+#   3. Start the backend API server:
+#        docker compose up backend
+#
+#   4. Or run everything in sequence:
+#        docker compose up
+# --------------------------------------------------------------------------
+
+services:
+  # -----------------------------------------------------------------------
+  # Data Pipeline — processes raw data into the SQLite database
+  # Run once (or whenever data changes) before starting the backend.
+  # -----------------------------------------------------------------------
+  data-pipeline:
+    build:
+      context: data_pipeline/
+    env_file:
+      - data_pipeline/.env
+    volumes:
+      # Raw data (read-only input) — mounted where config.py expects it
+      - ./data:/data:ro
+      # Shared database output — backend reads from here
+      - db-data:/database
+    working_dir: /app
+
+  # -----------------------------------------------------------------------
+  # Backend — FastAPI server with the PydanticAI agent
+  # -----------------------------------------------------------------------
+  backend:
+    build:
+      context: backend/
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Shared database (read-only for the backend)
+      - db-data:/database:ro
+    depends_on:
+      data-pipeline:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  db-data:
+    driver: local
