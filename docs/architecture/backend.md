@@ -16,7 +16,7 @@ backend/
 ├── auth.py                          # JWT authentication helpers + FastAPI dependency
 ├── models.py                        # Pydantic request/response schemas
 ├── logging_config.py                # Loguru setup + stdlib log interception
-├── telemetry.py                     # OpenTelemetry setup + PydanticAI instrumentation
+├── telemetry.py                     # Observability setup (logfire / otel / off)
 ├── use_cases/
 │   ├── __init__.py
 │   ├── chat.py                      # ChatUseCase — core business logic
@@ -88,8 +88,8 @@ lifespan() context manager
     ├── Create RetrievalService → connect to knowledge DB + load sqlite-vec
     ├── Create SQLService → connect to knowledge DB
     ├── Create ChatHistoryService → connect/create chat_history.sqlite
-    ├── Setup OpenTelemetry (if OTEL_ENABLED=true)
-    ├── Create PydanticAI Agent (with AsyncAzureOpenAI chat client, optional OTEL instrumentation)
+    ├── Setup observability (logfire / otel / off)
+    ├── Create PydanticAI Agent (with AsyncAzureOpenAI chat client, optional instrumentation)
     ├── Create Title Agent (lightweight, no tools — for chat title generation)
     ├── Wire ChatUseCase(agent, retrieval, sql)
     ├── Store use case + history + title_agent on app.state
@@ -455,18 +455,25 @@ All logging uses **loguru** via `logging_config.py`:
   - Login events
   - Title generation events
 
-### OpenTelemetry (telemetry.py)
+### Observability (telemetry.py)
 
-OpenTelemetry tracing is **toggleable** via `OTEL_ENABLED` (default: `false`). When enabled:
+Observability is controlled via the `OBSERVABILITY` setting (default: `off`). Three modes are supported:
+
+| Mode | Description |
+|---|---|
+| `logfire` | Pydantic Logfire — calls `logfire.configure()` + `logfire.instrument_fastapi(app)`. Set `LOGFIRE_TOKEN` env var. |
+| `otel` | Raw OpenTelemetry with OTLP HTTP exporter — sends traces to any OTEL-compatible collector (Jaeger, SigNoz, Grafana Tempo, etc.). |
+| `off` | Disabled (default). No tracing or metrics overhead. |
+
+When any observability mode is active:
 
 - **FastAPI auto-instrumentation** — every HTTP request gets a trace span with method, path, status code, and duration
 - **PydanticAI agent instrumentation** — both the main chat agent and the title agent emit GenAI-spec spans for every LLM call (model, tokens, latency, messages)
-- **OTLP HTTP exporter** — sends traces to any OTEL-compatible collector (Jaeger, SigNoz, Grafana Tempo, etc.)
-- **Optional console exporter** — for local debugging (`OTEL_CONSOLE_EXPORTER=true`)
+
+Additional OTEL-specific settings (used when `OBSERVABILITY=otel`):
 
 | Setting | Default | Description |
 |---|---|---|
-| `otel_enabled` | `false` | Enable OpenTelemetry tracing and metrics |
 | `otel_service_name` | `knowledge-assistant-backend` | Service name in trace metadata |
 | `otel_exporter_otlp_endpoint` | `http://localhost:4318` | OTLP HTTP collector endpoint |
 | `otel_console_exporter` | `false` | Also print spans to console (dev only) |
@@ -517,14 +524,14 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_expiry_hours: int = 24
 
-    # OpenTelemetry
-    otel_enabled: bool = False
+    # Observability — "logfire", "otel", or "off"
+    observability: str = "off"
     otel_service_name: str = "knowledge-assistant-backend"
     otel_exporter_otlp_endpoint: str = "http://localhost:4318"
     otel_console_exporter: bool = False
 ```
 
-Settings load from environment variables and `backend/.env`. Embedding settings fall back to chat model values when not set explicitly. Set `AUTH_ENABLED=false` for development without tokens. Set `OTEL_ENABLED=true` to emit OpenTelemetry traces.
+Settings load from environment variables and `backend/.env`. Embedding settings fall back to chat model values when not set explicitly. Set `AUTH_ENABLED=false` for development without tokens. Set `OBSERVABILITY=logfire` (with `LOGFIRE_TOKEN`) or `OBSERVABILITY=otel` to emit traces.
 
 ---
 

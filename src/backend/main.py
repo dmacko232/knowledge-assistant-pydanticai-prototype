@@ -33,7 +33,7 @@ from models import (
 from services.chat_history_service import ChatHistoryService
 from services.retrieval_service import RetrievalService
 from services.sql_service import SQLService
-from telemetry import setup_telemetry
+from telemetry import is_observability_active, setup_telemetry
 from use_cases.chat import ChatResult, ChatUseCase, generate_chat_title
 from use_cases.exceptions import EmptyConversationError
 
@@ -78,11 +78,20 @@ async def lifespan(app: FastAPI):
     history = ChatHistoryService(db_path=settings.chat_db_path)
     history.connect()
 
-    otel_active = settings.otel_enabled
+    # Seed pre-registered users (used when open_registration is disabled)
+    history.seed_users(
+        [
+            {"name": "Alice Smith", "email": "alice@northwind.com"},
+            {"name": "Bob Jones", "email": "bob@northwind.com"},
+        ]
+    )
+
+    otel_active = is_observability_active(settings)
     agent = create_agent(settings, instrument=otel_active)
     title_agent = create_title_agent(settings, instrument=otel_active)
 
     # Wire up the use case with all its dependencies
+    app.state.settings = settings
     app.state.chat_uc = ChatUseCase(
         agent=agent,
         retrieval_service=retrieval,
@@ -118,7 +127,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Instrument FastAPI with OpenTelemetry (no-op when OTEL_ENABLED=false)
+# Instrument FastAPI with observability (no-op when OBSERVABILITY=off)
 setup_telemetry(app, get_settings())
 
 
@@ -151,10 +160,22 @@ async def health():
 async def login(request: LoginRequest):
     """Authenticate a user and return a JWT.
 
-    Creates the user in the chat history DB if they don't exist yet.
+    When ``open_registration`` is disabled (default), only pre-registered
+    users can log in.  When enabled, unknown emails are auto-registered.
     """
+    settings = app.state.settings
     hist: ChatHistoryService = app.state.history
-    user = hist.ensure_user_by_email(request.name, request.email)
+
+    if settings.open_registration:
+        user = hist.ensure_user_by_email(request.name, request.email)
+    else:
+        user = hist.get_user_by_email(request.email)
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="No account found for this email. Contact an administrator.",
+            )
+
     token = create_token(user_id=user.id, name=user.name, email=user.email or "")
     logger.info("POST /auth/login | user={} name={}", user.id, user.name)
     return LoginResponse(token=token, user_id=user.id, name=user.name)

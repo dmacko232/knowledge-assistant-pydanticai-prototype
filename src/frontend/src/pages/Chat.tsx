@@ -9,7 +9,10 @@ import {
   generateTitle,
   sendMessageStream,
 } from "../api";
+import { logger } from "../logger";
 import type { ChatSummary, Source, ToolCall } from "../types";
+
+const log = logger("chat");
 
 export default function Chat() {
   const [chats, setChats] = useState<ChatSummary[]>([]);
@@ -22,8 +25,10 @@ export default function Chat() {
     try {
       const list = await fetchChats();
       setChats(list);
-    } catch {
-      /* ignore — sidebar stays empty */
+    } catch (err) {
+      log.warn("Failed to load chat list", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }, []);
 
@@ -33,6 +38,7 @@ export default function Chat() {
 
   // Load messages when selecting a chat
   const selectChat = useCallback(async (chatId: string) => {
+    log.info("Selected chat", { chatId });
     setActiveChatId(chatId);
     try {
       const msgs = await fetchMessages(chatId);
@@ -46,12 +52,17 @@ export default function Chat() {
           latencyMs: m.latency_ms,
         }))
       );
-    } catch {
+    } catch (err) {
+      log.error("Failed to load messages", {
+        chatId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       setMessages([]);
     }
   }, []);
 
   const startNewChat = useCallback(() => {
+    log.info("Starting new chat");
     setActiveChatId(null);
     setMessages([]);
   }, []);
@@ -125,22 +136,25 @@ export default function Chat() {
             if (isNewChat) {
               generateTitle(metadata.chat_id)
                 .then(() => loadChats())
-                .catch(() => {
-                  /* title generation is best-effort */
+                .catch((err) => {
+                  log.warn("Title generation failed (best-effort)", {
+                    chatId: metadata.chat_id,
+                    error: err instanceof Error ? err.message : String(err),
+                  });
                 });
             }
           }
         );
       } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Something went wrong";
+        log.error("Chat message failed", { chatId: activeChatId, error: errorMsg });
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
           if (last && last.role === "assistant") {
             updated[updated.length - 1] = {
               ...last,
-              content:
-                last.content ||
-                `Error: ${err instanceof Error ? err.message : "Something went wrong"}`,
+              content: last.content || `Error: ${errorMsg}`,
               streaming: false,
             };
           }

@@ -66,11 +66,16 @@ class Settings(BaseSettings):
     auth_enabled: bool = True
     jwt_secret: str = "dev-secret-change-in-production!!"
     jwt_expiry_hours: int = 24
+    open_registration: bool = False
 
     # ------------------------------------------------------------------
-    # OpenTelemetry — set OTEL_ENABLED=true to emit traces/metrics
+    # Observability — choose "logfire", "otel", or "off" (default)
+    #
+    # "logfire" — uses Pydantic Logfire (set LOGFIRE_TOKEN env var)
+    # "otel"    — raw OpenTelemetry with OTLP HTTP exporter
+    # "off"     — no tracing / metrics
     # ------------------------------------------------------------------
-    otel_enabled: bool = False
+    observability: str = "off"
     otel_service_name: str = "knowledge-assistant-backend"
     otel_exporter_otlp_endpoint: str = "http://localhost:4318"
     otel_console_exporter: bool = False

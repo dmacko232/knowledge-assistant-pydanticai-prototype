@@ -2,7 +2,7 @@
        run-pipeline reset-db stats run-backend test-backend install-backend install-backend-dev \
        lint-backend format-backend quality-backend quality-all test-acceptance \
        install-frontend run-frontend test-frontend lint-frontend typecheck-frontend quality-frontend \
-       dev \
+       dev seed-demo \
        docker-build docker-pipeline docker-backend docker-frontend docker-up docker-down docker-logs
 
 help:
@@ -57,6 +57,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev           - Start backend + frontend together"
+	@echo "  make seed-demo     - Seed demo chats (requires running backend)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  make docker-build    - Build all Docker images"
@@ -97,10 +98,10 @@ check-all: quality-all test-all
 	@echo "✓ All checks passed (quality + tests for all projects)!"
 
 test:
-	cd src/data_pipeline && uv run pytest ../../tests/data_pipeline
+	cd src/data_pipeline && uv run python -m pytest ../../tests/data_pipeline
 
 test-cov:
-	cd src/data_pipeline && uv run pytest ../../tests/data_pipeline --cov=. --cov-report=html --cov-report=term
+	cd src/data_pipeline && uv run python -m pytest ../../tests/data_pipeline --cov=. --cov-report=html --cov-report=term
 	@echo "Coverage report: src/data_pipeline/htmlcov/index.html"
 
 run-pipeline:
@@ -138,7 +139,7 @@ quality-backend: format-backend lint-backend
 	@echo "✓ Backend quality checks passed!"
 
 test-backend:
-	cd src/backend && uv run pytest ../../tests/backend -k "not acceptance"
+	cd src/backend && uv run python -m pytest ../../tests/backend -k "not acceptance"
 
 run-backend:
 	cd src/backend && python main.py
@@ -175,6 +176,9 @@ dev:
 	(cd src/backend && python main.py) & \
 	(cd src/frontend && npm run dev) & \
 	wait
+
+seed-demo:
+	python scripts/seed_demo.py
 
 # ---------------------------------------------------------------------------
 # All
