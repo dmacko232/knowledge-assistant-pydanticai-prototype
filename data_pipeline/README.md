@@ -1,14 +1,15 @@
 # Data Pipeline
 
-This data pipeline processes markdown documents and structured data (KPIs, employee directory) for the Northwind Commerce knowledge assistant.
+Ingestion pipeline that processes the Northwind Commerce internal knowledge base into a queryable SQLite database. It handles both unstructured documents (markdown) and structured data (CSV/JSON).
 
-## Features
+## What It Does
 
-- **Document Processing**: Chunks markdown files by structure, generates embeddings, stores in vector database
-- **Structured Data**: Parses CSV/JSON files and stores in relational database
-- **Vector Search**: Semantic search using OpenAI embeddings
-- **BM25 Search**: Keyword-based search using SQLite FTS5
-- **CLI**: Simple command-line interface for running the pipeline
+1. **Document Processing** — reads markdown files from `data/raw/documents/`, chunks them by structure (headers), and generates embeddings via Azure OpenAI.
+2. **Structured Data Processing** — parses `kpi_catalog.csv` and `directory.json` into relational tables.
+3. **Storage** — writes everything into a single SQLite database at `database/knowledge_assistant.sqlite`, using:
+   - **sqlite-vec** for vector similarity search
+   - **FTS5** for BM25 keyword search
+   - **SQLModel** tables for KPIs and employees
 
 ## Setup
 
@@ -17,148 +18,102 @@ This data pipeline processes markdown documents and structured data (KPIs, emplo
 ```bash
 cd data_pipeline
 pip install -e .
+
+# Or with dev tools (pytest, ruff, ty):
+pip install -e ".[dev]"
 ```
 
-### 2. Configure API Key
-
-Create a `.env` file with your OpenAI API key:
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env with your Azure OpenAI API key and endpoint
 ```
 
-### 3. Download NLTK Data
-
-NLTK data will be downloaded automatically on first run.
-
-## Usage
-
-### Run Full Pipeline
-
-Process all documents and structured data:
+### 3. Run
 
 ```bash
+# From the project root:
+make run-pipeline
+
+# Or directly:
 python main.py process-all
+
+# Without API keys (mock embeddings for testing):
+python main.py process-all --mock-embeddings
 ```
 
-This will:
-1. Process all markdown documents in `data/raw/documents/`
-2. Chunk documents by structure (300-500 tokens per chunk)
-3. Generate embeddings using OpenAI text-embedding-3-small
-4. Store chunks in vector database with FTS5 index
-5. Process KPI catalog and employee directory
-6. Store structured data in relational database
+## CLI Reference
 
-### Process Only Documents
-
-```bash
-python main.py process-documents
-```
-
-### Process Only Structured Data
-
-```bash
-python main.py process-structured
-```
-
-### View Statistics
-
-```bash
-python main.py stats
-```
-
-### Search Documents
-
-**Vector search** (semantic):
-```bash
-python main.py search-vector "KPI definitions" --limit 5
-```
-
-**BM25 search** (keyword):
-```bash
-python main.py search-bm25 "security policy" --limit 5 --category policies
-```
-
-### Reset Databases
-
-```bash
-python main.py reset
-```
-
-## Output
-
-The pipeline creates two SQLite databases in `data_pipeline/output/`:
-
-- **vector_db.sqlite**: Document chunks with embeddings and FTS5 index
-- **relational_db.sqlite**: KPI catalog and employee directory
+| Command | Description |
+|---|---|
+| `python main.py process-all [--mock-embeddings]` | Run the full pipeline |
+| `python main.py process-documents [--mock-embeddings]` | Process documents only |
+| `python main.py process-structured` | Process structured data only |
+| `python main.py stats` | Show database statistics |
+| `python main.py reset` | Drop all tables and reset |
+| `python main.py dump-db [--sample N] [--schema]` | Inspect database contents |
+| `python main.py search-vector "query" [--limit N] [--category CAT]` | Semantic search |
+| `python main.py search-bm25 "query" [--limit N] [--category CAT]` | Keyword search |
 
 ## Database Schema
 
-### Vector Store (vector_db.sqlite)
+### Vector Store
 
-**document_chunks**: Main chunks table with metadata
-- chunk_id, document_name, category, section_header
-- retrieval_chunk, generation_chunk
-- last_updated, word_count, metadata
+| Table | Purpose |
+|---|---|
+| `document_chunks` | Chunk text, metadata, document name, category, section header |
+| `vec_chunks` | Embedding vectors (1536-dim, sqlite-vec) |
+| `fts_chunks` | Full-text search index (FTS5 with Porter stemming) |
 
-**vec_chunks**: Vector embeddings (using sqlite-vec)
-- chunk_id, embedding (1536 dimensions)
+### Relational Store
 
-**fts_chunks**: Full-text search index (using FTS5)
-- chunk_id, document_name, category, section_header, content
-
-### Relational Store (relational_db.sqlite)
-
-**kpi_catalog**: KPI definitions
-- kpi_name, definition, owner_team, primary_source, last_updated
-
-**directory**: Employee directory
-- name, email, team, role, timezone
+| Table | Columns |
+|---|---|
+| `kpi_catalog` | kpi_name, definition, owner_team, primary_source, last_updated |
+| `directory` | name, email, team, role, timezone |
 
 ## Architecture
 
 ```
 data_pipeline/
-├── main.py              # CLI entry point
-├── config.py            # Configuration
+├── main.py                  # Click CLI entry point
+├── config.py                # Paths, Azure OpenAI settings, chunking params
 ├── database/
-│   ├── vector_store.py  # Vector DB with sqlite-vec + FTS5
-│   └── relational_store.py  # Relational tables
+│   ├── models.py            # SQLModel table definitions
+│   ├── interfaces.py        # Protocol interfaces
+│   ├── vector_store.py      # Vector DB (sqlite-vec + FTS5)
+│   └── relational_store.py  # KPI & employee tables
 ├── processors/
-│   ├── document_processor.py    # Markdown chunking
-│   ├── embedding_processor.py   # OpenAI embeddings
-│   └── structured_processor.py  # CSV/JSON parsing
-└── utils/
-    ├── text_utils.py        # Text preprocessing
-    └── markdown_utils.py    # Markdown parsing
+│   ├── document_processor.py    # Markdown → chunks
+│   ├── embedding_processor.py   # Chunks → embeddings
+│   └── structured_processor.py  # CSV/JSON → table rows
+├── services/
+│   └── embedding_service.py # Azure OpenAI embedding client
+├── utils/
+│   ├── text_utils.py        # Text preprocessing (tokenize, lemmatize)
+│   └── markdown_utils.py    # Markdown parsing helpers
+└── tests/                   # Unit tests
 ```
 
 ## Configuration
 
-Edit `config.py` to customize:
-- Embedding model (default: text-embedding-3-small)
-- Chunk size (default: 300-500 tokens)
-- Context window (default: ±1 chunk)
-- Document categories
+Key settings in `config.py`:
 
-## Cost Estimation
+| Setting | Default | Description |
+|---|---|---|
+| Embedding model | `text-embedding-3-small` | Azure OpenAI deployment |
+| Embedding dimensions | 1536 | Vector size |
+| Chunk size | 300–500 tokens | Min/max tokens per chunk |
+| Context window | ±1 chunk | Surrounding chunks for generation context |
+| Categories | domain, policies, runbooks | Document folder → category mapping |
 
-Embedding ~20 documents with ~100 chunks:
-- Tokens: ~50,000
-- Cost: ~$0.001 (OpenAI text-embedding-3-small @ $0.02/1M tokens)
+## Testing
 
-## Notes
+```bash
+# Run all tests
+make test
 
-- **BM25 in SQLite**: Uses FTS5 for BM25 ranking (no external library needed)
-- **Vector Search**: Brute-force search (no ANN index) - fast enough for small datasets
-- **Chunking Strategy**: Chunks by markdown structure (headers) for semantic coherence
-- **Generation Chunks**: Include surrounding context for better LLM generation
-
-## Troubleshooting
-
-**Import errors**: Make sure you're in the `data_pipeline` directory when running commands
-
-**API key error**: Create `.env` file with valid `OPENAI_API_KEY`
-
-**NLTK data**: Will download automatically on first run (punkt, stopwords, wordnet)
+# With coverage
+make test-cov
+```

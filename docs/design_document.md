@@ -33,12 +33,15 @@ Processing of structured and semi-structured data:
 - we would parse the kpi_catalog.csv and directory and store them as two separate tables in SQL DB
 
 ### Backend
-- agent written in PydanticAI framework, FastAPI bakcned
+- agent written in PydanticAI framework, FastAPI backend
+- schema for SQL DB will be User/Session/Response; the Response will have 
 - two tools, one to look up data in SQL DB and second one to search KB
-- retrieval tool is standard pipeline of embedding -> search -> reranker
+- SQL DB tool must allow looking into KPI and directory, allow it to see the schemas; also please specify that the tool needs to write sql query according to the whole history
+- retrieval tool is standard pipeline of embedding model and rpeprocessing for bm25 and embedding -> search -> reranker; the tool specifies the query needs to be standalone question rewritten from chat history
 - prompt forces to LLM to say it doesnt know
 - prompt forces LLM to check date of information per chunks and prefer authoritative/newer ones. (Could be also partially done programatically to let LLM know)
-- include citations on output
+- include citations on output, please add citations after each sentence/statement with [1], [2] etc
+- tests must be included
 
 Additional features later on
 - store chat history in transactional DB
