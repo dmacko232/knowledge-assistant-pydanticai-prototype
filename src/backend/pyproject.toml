@@ -40,8 +40,17 @@ select = ["E", "F", "I", "N", "W", "UP"]
 ignore = ["E501"]
 
 [tool.setuptools]
-packages = ["services", "use_cases"]
-py-modules = ["main", "config", "agent", "models", "logging_config", "auth", "telemetry"]
+packages = [
+    "domain",
+    "domain.infrastructure",
+    "application",
+    "application.use_cases",
+    "application.infrastructure",
+    "presentation",
+    "presentation.routes",
+    "presentation.infrastructure",
+]
+py-modules = ["main", "config", "logging_config"]
 
 [tool.ty.environment]
 root = ["."]

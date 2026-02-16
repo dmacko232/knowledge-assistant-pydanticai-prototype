@@ -33,7 +33,6 @@ class AuthenticatedUser:
     name: str
     email: str
 
-    # Default mock user returned when auth is disabled
     _mock: AuthenticatedUser | None = None
 
 

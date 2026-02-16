@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from services.chat_history_service import ChatHistoryService
+from domain.infrastructure.chat_history_service import ChatHistoryService
 
 
 @pytest.fixture()

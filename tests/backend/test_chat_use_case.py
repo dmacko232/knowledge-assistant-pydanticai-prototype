@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 
-from models import ChatMessage
-from use_cases.chat import CONTENT_FILTER_REFUSAL, ChatResult, ChatUseCase
-from use_cases.exceptions import EmptyConversationError
+from application.exceptions import EmptyConversationError
+from application.use_cases.chat import CONTENT_FILTER_REFUSAL, ChatResult, ChatUseCase
+from domain.models import ChatMessage
 
 # ---------------------------------------------------------------------------
 # Fixtures

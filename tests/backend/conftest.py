@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-# Add src/backend to sys.path so imports like `from services.sql_service import ...` work.
+# Add src/backend to sys.path so imports like `from domain.infrastructure.sql_service import ...` work.
 _BACKEND_SRC = str(Path(__file__).resolve().parent.parent.parent / "src" / "backend")
 if _BACKEND_SRC not in sys.path:
     sys.path.insert(0, _BACKEND_SRC)
@@ -13,7 +13,7 @@ import sqlite3
 
 import pytest
 
-from services.sql_service import SQLService
+from domain.infrastructure.sql_service import SQLService
 
 
 def pytest_configure(config):

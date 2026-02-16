@@ -2,7 +2,6 @@
 
 import json
 import sqlite3
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import sqlite_vec
@@ -10,19 +9,7 @@ from loguru import logger
 from openai import AzureOpenAI
 from sqlite_vec import serialize_float32
 
-
-@dataclass
-class RetrievalResult:
-    """A single retrieval result with source metadata."""
-
-    chunk_id: str
-    document_name: str
-    category: str
-    section_header: str | None
-    generation_chunk: str
-    last_updated: str | None
-    score: float
-    chunk_metadata: dict = field(default_factory=dict)
+from domain.models import RetrievalResult
 
 
 class RetrievalService:
@@ -220,12 +207,7 @@ class RetrievalService:
         query: str,
         candidates: list[RetrievalResult],
     ) -> list[RetrievalResult]:
-        """Re-score candidates using a cross-encoder reranker API.
-
-        If the reranker is disabled or unavailable, returns candidates unchanged.
-        Currently supports Cohere-compatible rerank APIs.  Swap the implementation
-        for Azure AI, Jina, or a local cross-encoder as needed.
-        """
+        """Re-score candidates using a cross-encoder reranker API."""
         if not self.reranker_enabled or not self.reranker_api_key:
             return candidates
 
@@ -274,40 +256,20 @@ class RetrievalService:
         final_limit: int = 5,
         rrf_k: int = 60,
     ) -> list[RetrievalResult]:
-        """Run hybrid search: embed → vector + BM25 → RRF merge → (rerank) → top results.
-
-        Args:
-            query: The user's search query.
-            category: Optional category filter ('domain', 'policies', 'runbooks').
-            vector_limit: How many vector results to fetch.
-            bm25_limit: How many BM25 results to fetch.
-            final_limit: How many final results to return after fusion.
-            rrf_k: RRF smoothing constant.
-
-        Returns:
-            List of RetrievalResult, ordered by relevance.
-        """
-        # 1) Embed the query
+        """Run hybrid search: embed -> vector + BM25 -> RRF merge -> (rerank) -> top results."""
         query_embedding = self.embed_query(query)
-
-        # 2) Vector search
         vector_results = self._vector_search(query_embedding, vector_limit, category)
 
-        # 3) BM25 search (gracefully handle FTS5 syntax errors)
         try:
             bm25_results = self._bm25_search(query, bm25_limit, category)
         except Exception:
             bm25_results = []
 
-        # 4) Fuse with RRF
-        # When reranker is enabled, fetch more candidates so the reranker has a
-        # richer pool to re-score.
         rrf_limit = (
             max(final_limit, self.reranker_top_n * 2) if self.reranker_enabled else final_limit
         )
         fused = self.reciprocal_rank_fusion(vector_results, bm25_results, k=rrf_k)
 
-        # 5) Fetch chunk details for top candidates
         candidates: list[RetrievalResult] = []
         for chunk_id, score in fused[:rrf_limit]:
             details = self._get_chunk_details(chunk_id)
@@ -332,7 +294,6 @@ class RetrievalService:
                     )
                 )
 
-        # 6) Optional reranker pass
         if self.reranker_enabled:
             candidates = self._rerank(query, candidates)
             candidates = candidates[:final_limit]

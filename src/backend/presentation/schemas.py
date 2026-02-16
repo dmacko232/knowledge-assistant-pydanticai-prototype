@@ -1,20 +1,8 @@
-"""Pydantic models for API requests and responses."""
+"""HTTP request/response schemas (Pydantic models) for the REST API."""
 
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-
-# ---------------------------------------------------------------------------
-# Domain model (shared between use-case and presentation layers)
-# ---------------------------------------------------------------------------
-
-
-class ChatMessage(BaseModel):
-    """A single message in the conversation (used internally by the use case)."""
-
-    role: str = Field(description="Message role: 'user' or 'assistant'")
-    content: str = Field(description="Message content")
-
 
 # ---------------------------------------------------------------------------
 # Auth

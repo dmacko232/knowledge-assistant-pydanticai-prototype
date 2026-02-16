@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from application.use_cases.chat import ChatResult
 from config import Settings
-from services.chat_history_service import ChatHistoryService
-from use_cases.chat import ChatResult
+from domain.infrastructure.chat_history_service import ChatHistoryService
 
 
 def _test_settings(tmp_path: Path) -> Settings:
@@ -357,20 +357,20 @@ class TestModels:
     """Test Pydantic model validation."""
 
     def test_chat_request_valid(self):
-        from models import ChatRequest
+        from presentation.schemas import ChatRequest
 
         req = ChatRequest(message="Hello")
         assert req.message == "Hello"
         assert req.chat_id is None
 
     def test_chat_request_with_chat_id(self):
-        from models import ChatRequest
+        from presentation.schemas import ChatRequest
 
         req = ChatRequest(message="Hello", chat_id="chat-1")
         assert req.chat_id == "chat-1"
 
     def test_chat_response_valid(self):
-        from models import ChatResponse
+        from presentation.schemas import ChatResponse
 
         resp = ChatResponse(
             chat_id="c1",
@@ -382,14 +382,14 @@ class TestModels:
         assert resp.sources == []
 
     def test_login_request_valid(self):
-        from models import LoginRequest
+        from presentation.schemas import LoginRequest
 
         req = LoginRequest(name="Alice", email="alice@northwind.com")
         assert req.name == "Alice"
         assert req.email == "alice@northwind.com"
 
     def test_chat_title_response_valid(self):
-        from models import ChatTitleResponse
+        from presentation.schemas import ChatTitleResponse
 
         resp = ChatTitleResponse(chat_id="c1", title="Production Deployment Guide")
         assert resp.chat_id == "c1"

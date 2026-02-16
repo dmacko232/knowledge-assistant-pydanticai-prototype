@@ -17,11 +17,11 @@ from pydantic_ai import Agent, ModelRequest, ModelResponse, TextPart, UserPrompt
 from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 
-from agent import AgentDeps
-from models import ChatMessage
-from services.retrieval_service import RetrievalService
-from services.sql_service import SQLService
-from use_cases.exceptions import EmptyConversationError
+from application.exceptions import EmptyConversationError
+from application.infrastructure.agent import AgentDeps
+from domain.infrastructure.retrieval_service import RetrievalService
+from domain.infrastructure.sql_service import SQLService
+from domain.models import ChatMessage
 
 CONTENT_FILTER_REFUSAL = (
     "I'm sorry, but I can't comply with that request. "
@@ -79,19 +79,7 @@ class ChatUseCase:
     # ------------------------------------------------------------------
 
     async def execute(self, messages: list[ChatMessage]) -> ChatResult:
-        """Run a single chat turn and return a rich result.
-
-        Args:
-            messages: Full conversation history. The last entry must be the
-                      new user message; earlier entries provide context for
-                      query rewriting.
-
-        Returns:
-            A ``ChatResult`` containing the answer plus tool call / source metadata.
-
-        Raises:
-            EmptyConversationError: If *messages* is empty.
-        """
+        """Run a single chat turn and return a rich result."""
         if not messages:
             raise EmptyConversationError("messages list must not be empty")
 
@@ -148,9 +136,6 @@ class ChatUseCase:
             ``str`` chunks as the agent produces text.
             As the **final** item, yields a ``ChatResult`` with the full answer
             and metadata (tool_calls, sources, latency).
-
-        Raises:
-            EmptyConversationError: If *messages* is empty.
         """
         if not messages:
             raise EmptyConversationError("messages list must not be empty")
@@ -296,14 +281,7 @@ async def generate_chat_title(
     messages: list[ChatMessage],
     title_agent: Agent[None, str],
 ) -> str:
-    """Generate a short chat title from the first user+assistant exchange.
-
-    Uses a lightweight PydanticAI agent (no tools) to produce a concise
-    5-8 word title for the conversation.
-
-    Falls back to a truncation of the first user message if the agent
-    call fails for any reason.
-    """
+    """Generate a short chat title from the first user+assistant exchange."""
     user_msg = ""
     assistant_msg = ""
     for m in messages:
@@ -331,7 +309,6 @@ async def generate_chat_title(
     except Exception:
         logger.warning("Failed to generate chat title via LLM, using fallback")
 
-    # Fallback: truncate first user message
     title = user_msg[:60].strip()
     if len(user_msg) > 60:
         title += "..."

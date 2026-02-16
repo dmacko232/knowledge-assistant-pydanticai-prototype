@@ -8,23 +8,37 @@ The backend is a FastAPI application that serves a REST API for the knowledge as
 
 ## Project Structure
 
+The backend follows a **Domain-Driven Design (DDD) layered architecture** with three layers and nested infrastructure:
+
 ```
 backend/
-├── main.py                          # Presentation layer — FastAPI routes
-├── config.py                        # pydantic-settings configuration
-├── agent.py                         # PydanticAI agent factory + system prompt + tools
-├── auth.py                          # JWT authentication helpers + FastAPI dependency
-├── models.py                        # Pydantic request/response schemas
-├── logging_config.py                # Loguru setup + stdlib log interception
-├── telemetry.py                     # Observability setup (logfire / otel / off)
-├── use_cases/
-│   ├── __init__.py
-│   ├── chat.py                      # ChatUseCase — core business logic
-│   └── exceptions.py                # Domain exceptions
-├── services/
-│   ├── retrieval_service.py         # Hybrid search (vector + BM25 + RRF + reranker)
-│   ├── sql_service.py               # Read-only SQL for structured data
-│   └── chat_history_service.py      # Chat persistence (users, chats, messages)
+├── main.py                                  # Composition root — app bootstrap, lifespan, router registration
+├── config.py                                # pydantic-settings configuration (cross-cutting)
+├── logging_config.py                        # Loguru setup + stdlib log interception (cross-cutting)
+│
+├── presentation/                            # HTTP concerns
+│   ├── schemas.py                           # Request/response Pydantic models (DTOs)
+│   ├── routes/
+│   │   ├── auth.py                          # POST /auth/login
+│   │   └── chat.py                          # POST /chat, /chat/stream, GET /chats, etc.
+│   └── infrastructure/
+│       └── auth.py                          # JWT helpers + FastAPI dependency
+│
+├── application/                             # Orchestration & business logic
+│   ├── exceptions.py                        # Application-level exceptions
+│   ├── use_cases/
+│   │   └── chat.py                          # ChatUseCase, generate_chat_title
+│   └── infrastructure/
+│       ├── agent.py                         # PydanticAI agent factory + system prompt + tools
+│       └── telemetry.py                     # Observability setup (logfire / otel / off)
+│
+├── domain/                                  # Core entities & interfaces
+│   ├── models.py                            # Domain entities (User, Chat, Message, etc.)
+│   ├── protocols.py                         # Service interfaces (IRetrievalService, etc.)
+│   └── infrastructure/
+│       ├── retrieval_service.py             # Hybrid search (vector + BM25 + RRF + reranker)
+│       ├── sql_service.py                   # Read-only SQL for structured data
+│       └── chat_history_service.py          # Chat persistence (users, chats, messages)
 ```
 
 Tests live at the project root in `tests/backend/`:
@@ -43,32 +57,37 @@ tests/backend/
 
 ---
 
-## Layered Architecture
+## Layered Architecture (DDD)
 
-The backend follows a **Clean Architecture** pattern with three layers. Each has a strict responsibility boundary — outer layers depend on inner ones, never the reverse.
+The backend follows a **Domain-Driven Design (DDD) layered architecture** with three layers. Each layer has its own `infrastructure/` subfolder for concrete implementations. Outer layers depend on inner ones, never the reverse.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    Presentation Layer                     │
-│                      (main.py)                           │
-│  FastAPI routes, request/response models, HTTP concerns  │
+│            (presentation/routes + schemas)                │
+│  FastAPI routes (APIRouter), request/response DTOs,      │
+│  JWT auth middleware                                     │
 ├──────────────────────────────────────────────────────────┤
-│                     Use Case Layer                        │
-│                 (use_cases/chat.py)                       │
-│  Business logic: validation, agent orchestration,        │
-│  tool call extraction, content filter handling           │
+│                    Application Layer                      │
+│          (application/use_cases + infrastructure)         │
+│  Business logic: ChatUseCase, title generation,          │
+│  agent factory, observability setup                      │
 ├──────────────────────────────────────────────────────────┤
-│                     Service Layer                         │
-│     retrieval_service    sql_service    chat_history      │
-│  Hybrid search engine   SQL executor   Persistence       │
+│                      Domain Layer                         │
+│              (domain/models + protocols)                  │
+│  Core entities (User, Chat, Message, RetrievalResult),   │
+│  service interfaces (protocols), infrastructure          │
+│  implementations (retrieval, SQL, chat history)          │
 └──────────────────────────────────────────────────────────┘
 ```
 
 ### Why this separation?
 
-- **`ChatUseCase`** has zero dependency on FastAPI. It can be tested, invoked from a CLI, or called from a WebSocket handler without any HTTP concepts.
-- **`main.py`** is a thin adapter. It translates HTTP requests into use-case calls and use-case results into HTTP responses.
-- **Services** are infrastructure concerns (database access, API clients) injected as dependencies.
+- **Domain layer** contains pure entities and service interfaces with zero framework dependencies.
+- **Application layer** (`ChatUseCase`) has zero dependency on FastAPI. It can be tested, invoked from a CLI, or called from a WebSocket handler without any HTTP concepts.
+- **Presentation layer** (`presentation/routes/`) is a thin adapter. It translates HTTP requests into use-case calls and use-case results into HTTP responses.
+- **`main.py`** is a slim composition root that wires all layers together and manages the application lifecycle.
+- **Infrastructure** in each layer holds concrete implementations (DB services, agent wiring, JWT helpers).
 
 ---
 
@@ -111,7 +130,7 @@ All services are created once and shared across requests via `app.state`.
 
 ## Authentication
 
-JWT authentication is implemented in `auth.py` and is **toggleable** via the `AUTH_ENABLED` setting.
+JWT authentication is implemented in `presentation/infrastructure/auth.py` and is **toggleable** via the `AUTH_ENABLED` setting.
 
 ### Settings
 
@@ -272,7 +291,7 @@ Client                  FastAPI                 HistoryService           ChatUse
 
 ## PydanticAI Agent
 
-The agent (`agent.py`) is the core intelligence. It wraps Azure OpenAI GPT-4o-mini with a detailed system prompt and two tools.
+The agent (`application/infrastructure/agent.py`) is the core intelligence. It wraps Azure OpenAI GPT-4o-mini with a detailed system prompt and two tools.
 
 ### System Prompt Rules
 
@@ -314,7 +333,7 @@ The LLM sees the full table schemas in the system prompt, so it knows columns an
 
 ## Retrieval Pipeline
 
-The retrieval service (`services/retrieval_service.py`) implements a **hybrid search** pipeline that combines semantic and keyword search, with an optional reranker.
+The retrieval service (`domain/infrastructure/retrieval_service.py`) implements a **hybrid search** pipeline that combines semantic and keyword search, with an optional reranker.
 
 ### Why Hybrid Search?
 
@@ -455,7 +474,7 @@ All logging uses **loguru** via `logging_config.py`:
   - Login events
   - Title generation events
 
-### Observability (telemetry.py)
+### Observability (application/infrastructure/telemetry.py)
 
 Observability is controlled via the `OBSERVABILITY` setting (default: `off`). Three modes are supported:
 

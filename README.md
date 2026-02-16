@@ -9,9 +9,8 @@ The project has four components:
 ```
 ├── src/
 │   ├── data_pipeline/   # Ingest & index raw documents and structured data
-│   ├── backend/         # FastAPI + PydanticAI agent that answers questions
-│   ├── frontend/        # React chat UI (Vite + TypeScript + Tailwind CSS)
-│   └── shared/          # Shared protocols and constants
+│   ├── backend/         # FastAPI + PydanticAI agent (DDD layered architecture)
+│   └── frontend/        # React chat UI (Vite + TypeScript + Tailwind CSS)
 ├── tests/
 │   ├── backend/         # Backend unit + acceptance tests
 │   └── data_pipeline/   # Data pipeline unit tests
@@ -167,15 +166,13 @@ knowledge-assistant-pydanticai-prototype/
 │   │   ├── processors/            # Document chunking, embedding, structured parsing
 │   │   ├── services/              # Azure OpenAI embedding service
 │   │   └── utils/                 # Text & markdown utilities
-│   ├── backend/                   # FastAPI + PydanticAI backend
-│   │   ├── main.py                # FastAPI app entry point
+│   ├── backend/                   # FastAPI + PydanticAI backend (DDD layers)
+│   │   ├── main.py                # Composition root — app bootstrap + router registration
 │   │   ├── config.py              # Configuration (pydantic-settings)
-│   │   ├── agent.py               # PydanticAI agent with tools & system prompt
-│   │   ├── auth.py                # JWT authentication helpers
-│   │   ├── telemetry.py           # Observability setup (logfire / otel / off)
-│   │   ├── models.py              # API request/response schemas
-│   │   ├── use_cases/             # Business logic (ChatUseCase)
-│   │   └── services/              # Retrieval, SQL, chat history services
+│   │   ├── logging_config.py      # Loguru setup + stdlib log interception
+│   │   ├── presentation/          # HTTP routes, DTOs, JWT auth middleware
+│   │   ├── application/           # Use cases, agent factory, observability
+│   │   └── domain/                # Entities, protocols, DB service implementations
 │   ├── frontend/                  # React chat UI
 │   │   ├── src/
 │   │   │   ├── App.tsx            # Router + auth context
@@ -185,8 +182,6 @@ knowledge-assistant-pydanticai-prototype/
 │   │   │   └── components/        # Sidebar, MessageList, ChatInput, etc.
 │   │   ├── Dockerfile             # Multi-stage build (Node → nginx)
 │   │   └── nginx.conf             # Reverse proxy config for /api
-│   └── shared/                    # Shared protocols and constants
-│       └── protocols/             # Service interface definitions
 ├── tests/
 │   ├── backend/                   # Backend unit + acceptance tests
 │   └── data_pipeline/             # Data pipeline unit tests
@@ -199,7 +194,7 @@ knowledge-assistant-pydanticai-prototype/
 │   └── seed_demo.py               # Seed demo chats for presentation
 ├── docs/
 │   ├── architecture/              # Architecture documentation
-│   └── presentation.html          # reveal.js slide deck
+│   └── presentation.md            # Marp slide deck (Markdown)
 ├── docker-compose.yml             # Docker Compose for running the full stack
 └── Makefile                       # All build, test, run, and Docker commands
 ```

@@ -1,6 +1,6 @@
 """Tests for the agent module."""
 
-from agent import SYSTEM_PROMPT, AgentDeps
+from application.infrastructure.agent import SYSTEM_PROMPT, AgentDeps
 
 
 class TestSystemPrompt:

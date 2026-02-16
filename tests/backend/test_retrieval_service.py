@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from services.retrieval_service import RetrievalResult, RetrievalService
+from domain.infrastructure.retrieval_service import RetrievalService
+from domain.models import RetrievalResult
 
 
 class TestReciprocalRankFusion:

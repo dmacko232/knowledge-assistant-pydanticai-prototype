@@ -1,6 +1,6 @@
 """Tests for the SQL service."""
 
-from services.sql_service import SQLService
+from domain.infrastructure.sql_service import SQLService
 
 
 class TestSQLServiceValidation:

@@ -9,56 +9,12 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
 from loguru import logger
 
-# ---------------------------------------------------------------------------
-# Data classes returned by the service
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class User:
-    id: str
-    name: str
-    email: str | None
-    created_at: str
-
-
-@dataclass
-class Chat:
-    id: str
-    user_id: str
-    title: str | None
-    title_generated: bool
-    created_at: str
-    updated_at: str
-
-
-@dataclass
-class Message:
-    id: str
-    chat_id: str
-    role: str
-    content: str
-    tool_calls: list[dict] = field(default_factory=list)
-    sources: list[dict] = field(default_factory=list)
-    model: str | None = None
-    latency_ms: int | None = None
-    created_at: str = ""
-
-
-@dataclass
-class ChatSummary:
-    id: str
-    title: str | None
-    created_at: str
-    updated_at: str
-    message_count: int
-
+from domain.models import Chat, ChatSummary, Message, User
 
 # ---------------------------------------------------------------------------
 # Schema
@@ -129,7 +85,6 @@ class ChatHistoryService:
     def _migrate(self) -> None:
         """Apply incremental schema migrations for existing databases."""
         assert self.conn
-        # Add title_generated column if it doesn't exist yet
         columns = {row["name"] for row in self.conn.execute("PRAGMA table_info(chats)").fetchall()}
         if "title_generated" not in columns:
             self.conn.execute("ALTER TABLE chats ADD COLUMN title_generated BOOLEAN DEFAULT 0")
@@ -166,10 +121,7 @@ class ChatHistoryService:
         )
 
     def seed_users(self, users: list[dict]) -> None:
-        """Seed pre-registered users. Skips users whose email already exists.
-
-        Each dict must have keys: name, email.
-        """
+        """Seed pre-registered users. Skips users whose email already exists."""
         assert self.conn
         for u in users:
             existing = self.get_user_by_email(u["email"])
@@ -237,10 +189,7 @@ class ChatHistoryService:
         return self._row_to_chat(row)
 
     def get_or_create_chat(self, chat_id: str | None, user_id: str) -> Chat:
-        """Return existing chat or create a new one.
-
-        If *chat_id* is ``None``, a brand-new chat is created.
-        """
+        """Return existing chat or create a new one."""
         assert self.conn
 
         if chat_id:
@@ -248,7 +197,6 @@ class ChatHistoryService:
             if chat:
                 return chat
 
-        # Create new chat
         new_id = chat_id or str(uuid.uuid4())
         now = _utcnow()
         self.ensure_user(user_id)

@@ -9,15 +9,14 @@
   - `processors/` — Document, embedding, and structured data processors
   - `services/` — Embedding service (OpenAI)
   - `utils/` — Text and markdown utilities
-- `src/backend/` — FastAPI REST API (PydanticAI agent, hybrid retrieval, chat history)
-  - `main.py` — Presentation layer (routes)
+- `src/backend/` — FastAPI REST API (DDD layered architecture)
+  - `main.py` — Composition root (app bootstrap, lifespan, router registration)
   - `config.py` — pydantic-settings configuration
-  - `agent.py` — PydanticAI agent factory + system prompt + tools
-  - `models.py` — Pydantic request/response schemas
-  - `use_cases/` — Business logic (ChatUseCase)
-  - `services/` — Retrieval, SQL, chat history services
+  - `logging_config.py` — Loguru setup + stdlib log interception
+  - `presentation/` — HTTP routes (APIRouter), request/response DTOs, JWT auth
+  - `application/` — Use cases (ChatUseCase), agent factory, observability
+  - `domain/` — Entities, service protocols, infrastructure implementations
 - `src/frontend/` — React chat UI (Vite + TypeScript + Tailwind CSS)
-- `src/shared/` — Shared code, protocols/interfaces
 - `tests/backend/` — Backend unit tests + acceptance tests (pytest)
 - `tests/data_pipeline/` — Data pipeline unit tests (pytest)
 - `docs/` — Design document and architecture docs
@@ -39,7 +38,7 @@
 ## Code Style
 
 - **Imports**: Always use absolute imports, never relative
-- **`__init__.py`**: Keep minimal (docstring only). Do NOT add `__all__` or re-export symbols. Consumers must import from the defining module directly (e.g., `from use_cases.chat import ChatUseCase`, not `from use_cases import ChatUseCase`)
+- **`__init__.py`**: Keep minimal (docstring only). Do NOT add `__all__` or re-export symbols. Consumers must import from the defining module directly (e.g., `from application.use_cases.chat import ChatUseCase`, not `from application import ChatUseCase`)
 - **Formatting**: Enforced by ruff — run `make format` / `make format-backend`
 - **Linting**: Enforced by ruff with unsafe-fixes enabled
 - **Data pipeline models**: SQLModel for database models

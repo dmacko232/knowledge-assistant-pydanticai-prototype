@@ -10,8 +10,8 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from config import Settings, get_settings
-from services.retrieval_service import RetrievalService
-from services.sql_service import TABLE_SCHEMAS, SQLService
+from domain.infrastructure.retrieval_service import RetrievalService
+from domain.infrastructure.sql_service import TABLE_SCHEMAS, SQLService
 
 
 @dataclass
@@ -103,7 +103,7 @@ def create_agent(
     """
     s = settings or get_settings()
 
-    from telemetry import get_instrumentation_settings
+    from application.infrastructure.telemetry import get_instrumentation_settings
 
     otel_settings = get_instrumentation_settings(s) if instrument else None
 
@@ -208,14 +208,10 @@ _TITLE_SYSTEM_PROMPT = (
 def create_title_agent(
     settings: Settings | None = None, instrument: bool = False
 ) -> Agent[None, str]:
-    """Create a lightweight agent for generating chat titles.
-
-    Uses the same Azure OpenAI model as the main agent but with no tools
-    and a minimal system prompt.  Suitable for a single quick call.
-    """
+    """Create a lightweight agent for generating chat titles."""
     s = settings or get_settings()
 
-    from telemetry import get_instrumentation_settings
+    from application.infrastructure.telemetry import get_instrumentation_settings
 
     otel_settings = get_instrumentation_settings(s) if instrument else None
 
